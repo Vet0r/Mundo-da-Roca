@@ -1,13 +1,21 @@
 import pygame
 import sys
 import time
+from menu import mostrar_menu
+from save_system import SaveSystem
+
+escolha_menu = mostrar_menu()
+
+if escolha_menu == "sair":
+    pygame.quit()
+    sys.exit()
 
 pygame.init()
 
 fonte = pygame.font.Font(None, 24)
 fonte_titulo = pygame.font.Font(None, 32)
 
-LARGURA, ALTURA = 800, 600
+LARGURA, ALTURA = 1256, 768
 tela = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Fazenda Virtual")
 
@@ -19,13 +27,6 @@ grama_img = pygame.image.load("grama.png")
 x, y = 100, 100
 velocidade = 5
 
-dinheiro = 100
-sementes = {
-    'milho': 5,
-    'tomate': 3,
-    'alface': 2
-}
-
 TIPOS_SEMENTE = {
     'milho': {'cor': (255, 255, 0), 'preco': 10, 'valor_colheita': 25, 'tempo_crescimento': 5},
     'tomate': {'cor': (255, 0, 0), 'preco': 15, 'valor_colheita': 40, 'tempo_crescimento': 8},
@@ -33,7 +34,23 @@ TIPOS_SEMENTE = {
 }
 
 TAMANHO_CELULA = 40
-fazenda = {}
+
+if escolha_menu == "continuar":
+    dados_carregados = SaveSystem.load_game()
+    if dados_carregados:
+        dinheiro = dados_carregados['dinheiro']
+        sementes = dados_carregados['sementes']
+        fazenda = dados_carregados['fazenda']
+        print(f"Jogo carregado! Data: {dados_carregados['data_save']}")
+    else:
+        print("Erro ao carregar jogo, iniciando novo jogo...")
+        dinheiro = 100
+        sementes = {'milho': 5, 'tomate': 3, 'alface': 2}
+        fazenda = {}
+else:
+    dinheiro = 100
+    sementes = {'milho': 5, 'tomate': 3, 'alface': 2}
+    fazenda = {}
 
 semente_selecionada = 'milho'
 loja_aberta = False
@@ -41,7 +58,6 @@ item_selecionado_loja = 0
 espaco_pressionado = False
 
 def desenhar_planta(superficie, x, y, tipo_semente, estagio):
-    """Desenha uma planta baseada no tipo e estágio"""
     cor = TIPOS_SEMENTE[tipo_semente]['cor']
     tamanho = min(estagio * 4, 30)
     
@@ -58,7 +74,6 @@ def desenhar_planta(superficie, x, y, tipo_semente, estagio):
                         (x + TAMANHO_CELULA // 2, y + TAMANHO_CELULA - 5), 3)
 
 def atualizar_plantas():
-    """Atualiza o crescimento das plantas"""
     tempo_atual = time.time()
     plantas_para_remover = []
     
@@ -77,7 +92,6 @@ def atualizar_plantas():
         del fazenda[posicao]
 
 def plantar_semente(grid_x, grid_y, tipo):
-    """Planta uma semente na posição especificada"""
     global dinheiro
     
     posicao = (grid_x, grid_y)
@@ -92,7 +106,6 @@ def plantar_semente(grid_x, grid_y, tipo):
     return False
 
 def colher_planta(grid_x, grid_y):
-    """Colhe uma planta madura"""
     global dinheiro
     
     posicao = (grid_x, grid_y)
@@ -106,7 +119,6 @@ def colher_planta(grid_x, grid_y):
     return False
 
 def desenhar_interface():
-    """Desenha a interface do usuário"""
     pygame.draw.rect(tela, (50, 50, 50), (10, 10, 300, 150))
     pygame.draw.rect(tela, (255, 255, 255), (10, 10, 300, 150), 2)
     
@@ -128,18 +140,24 @@ def desenhar_interface():
         "Segurar ESPAÇO: Ação contínua",
         "1,2,3: Selecionar semente",
         "L: Abrir/Fechar Loja",
+        "S: Salvar jogo",
         "Estágio 6: Colher",
         "Estágio 7: Estragado",
     ]
     
-    y_offset = 400
+    y_offset = 380
     for instrucao in instrucoes:
         texto = fonte.render(instrucao, True, (255, 255, 255))
         tela.blit(texto, (20, y_offset))
         y_offset += 20
+    
+    global tempo_mensagem
+    if mensagem_save and (time.time() - tempo_mensagem < 3):
+        cor_mensagem = (0, 255, 0) if "sucesso" in mensagem_save else (255, 0, 0)
+        texto_save = fonte.render(mensagem_save, True, cor_mensagem)
+        tela.blit(texto_save, (LARGURA // 2 - texto_save.get_width() // 2, 30))
 
 def desenhar_loja():
-    """Desenha a interface da loja"""
     largura_loja = 400
     altura_loja = 300
     x_loja = (LARGURA - largura_loja) // 2
@@ -189,7 +207,6 @@ def desenhar_loja():
         y_offset += 18
 
 def tentar_acao_na_posicao(pos_x, pos_y):
-    """Tenta plantar ou colher na posição especificada"""
     grid_x = pos_x // TAMANHO_CELULA
     grid_y = pos_y // TAMANHO_CELULA
     
@@ -197,7 +214,6 @@ def tentar_acao_na_posicao(pos_x, pos_y):
         plantar_semente(grid_x, grid_y, semente_selecionada)
 
 def comprar_semente(tipo, quantidade=1):
-    """Compra sementes na loja"""
     global dinheiro
     
     preco_total = TIPOS_SEMENTE[tipo]['preco'] * quantidade
@@ -210,10 +226,14 @@ def comprar_semente(tipo, quantidade=1):
 
 rodando = True
 relogio = pygame.time.Clock()
+mensagem_save = ""
+tempo_mensagem = 0
 
 while rodando:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
+            if SaveSystem.save_game(dinheiro, sementes, fazenda):
+                print("Jogo salvo automaticamente!")
             rodando = False
         
         if evento.type == pygame.KEYDOWN:
@@ -247,6 +267,16 @@ while rodando:
                 
                 elif evento.key == pygame.K_SPACE:
                     tentar_acao_na_posicao(x + 20, y + 37)
+                
+                elif evento.key == pygame.K_s:
+                    if SaveSystem.save_game(dinheiro, sementes, fazenda):
+                        mensagem_save = "Jogo salvo com sucesso!"
+                        tempo_mensagem = time.time()
+                        print("Jogo salvo!")
+                    else:
+                        mensagem_save = "Erro ao salvar jogo!"
+                        tempo_mensagem = time.time()
+                        print("Erro ao salvar!")
 
     if not loja_aberta:
         teclas = pygame.key.get_pressed()

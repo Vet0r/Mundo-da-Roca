@@ -1,6 +1,30 @@
 # Fazenda Virtual
 
-Um jogo de simulação de fazenda educacional feito em Python com Pygame em que você ira plantar e colher diferentes tipos de sementes ao mesmo tempo em que gerencia seus recursos através de uma loja.
+Um jogo de simulação de fazenda educacional feito em ## 🚀 Como Executar
+```bash
+cd /Users/vitortargino/apps/pygame
+python3 main.py
+```
+
+## 📋 Requisitos
+- Python 3.x
+- Pygame
+- Imagens: `char.png`, `grama.png`
+
+## 💾 Sistema de Save
+
+### Menu Inicial
+Ao iniciar o jogo, você verá um menu com opções:
+- **Novo Jogo**: Inicia uma nova fazenda
+- **Continuar Jogo**: Carrega o último save (se existir)
+- **Deletar Save**: Remove o save atual (com confirmação)
+- **Sair**: Fecha o jogo
+
+### Salvamento
+- **Automático**: O jogo é salvo automaticamente ao fechar
+- **Manual**: Pressione **S** durante o jogo para salvar
+- **Arquivo**: O save é armazenado em `fazenda_save.json`
+- **Dados salvos**: Dinheiro, sementes, todas as plantas e seus estágios Pygame em que você ira plantar e colher diferentes tipos de sementes ao mesmo tempo em que gerencia seus recursos através de uma loja.
 
 ## Como Jogar
 
@@ -10,6 +34,8 @@ Um jogo de simulação de fazenda educacional feito em Python com Pygame em que 
 - **Espaço**: Plantar semente ou colher planta madura (ação única)
 - **Segurar Espaço**: Ação contínua - planta/colhe automaticamente enquanto se move
 - **L**: Abrir/Fechar loja
+- **S**: Salvar jogo manualmente
+- **ESC**: Fechar loja (quando aberta)
 
 ### Controles da Loja
 - **↑↓**: Navegar pelos itens da loja
