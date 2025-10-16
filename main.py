@@ -19,24 +19,42 @@ LARGURA, ALTURA = 1256, 768
 tela = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Fazenda Virtual")
 
-char_img = pygame.image.load("char.png")
+# Carregar imagens de assets
+char_img = pygame.image.load("assests/char.png")
 char_img = pygame.transform.scale(char_img, (40, 75))
 
-grama_img = pygame.image.load("grama.png")
+grama_img = pygame.image.load("assests/grama.png")
 
 x, y = 100, 100
 velocidade = 5
 
+TAMANHO_CELULA = 40
+
+# Carregar terra adubada
+terra_img = pygame.image.load("assests/terra.png")
+terra_img = pygame.transform.scale(terra_img, (TAMANHO_CELULA, TAMANHO_CELULA))
+
+# Carregar sprites de crescimento para cada tipo de planta
+SPRITES_PLANTAS = {
+    'milho': {},
+    'tomate': {},
+    'alface': {}
+}
+
+# Carregar todos os estágios (1-7) para cada tipo de planta
+for tipo in ['milho', 'tomate', 'alface']:
+    for estagio in range(1, 8):
+        caminho = f"assests/{tipo}/{tipo}_{estagio}.png"
+        img = pygame.image.load(caminho)
+        img = pygame.transform.scale(img, (TAMANHO_CELULA, TAMANHO_CELULA))
+        SPRITES_PLANTAS[tipo][estagio] = img
+
+# Configurações das sementes
 TIPOS_SEMENTE = {
     'milho': {'cor': (255, 255, 0), 'preco': 10, 'valor_colheita': 25, 'tempo_crescimento': 5},
     'tomate': {'cor': (255, 0, 0), 'preco': 15, 'valor_colheita': 40, 'tempo_crescimento': 8},
     'alface': {'cor': (0, 255, 0), 'preco': 8, 'valor_colheita': 20, 'tempo_crescimento': 3}
 }
-
-TAMANHO_CELULA = 40
-
-terra_img = pygame.image.load("terra.png")
-terra_img = pygame.transform.scale(terra_img, (TAMANHO_CELULA, TAMANHO_CELULA))
 
 terra_adubada = set()
 
@@ -65,20 +83,17 @@ espaco_pressionado = False
 modo_adubar = False
 
 def desenhar_planta(superficie, x, y, tipo_semente, estagio):
-    cor = TIPOS_SEMENTE[tipo_semente]['cor']
-    tamanho = min(estagio * 4, 30)
-    
-    if estagio == 7:
-        cor = (139, 69, 19)
-    elif estagio >= 6:
-        tamanho = 30
-    
-    pygame.draw.circle(superficie, cor, (x + TAMANHO_CELULA // 2, y + TAMANHO_CELULA // 2), tamanho // 2)
-    
-    if estagio > 1:
-        pygame.draw.line(superficie, (0, 100, 0), 
-                        (x + TAMANHO_CELULA // 2, y + TAMANHO_CELULA // 2), 
-                        (x + TAMANHO_CELULA // 2, y + TAMANHO_CELULA - 5), 3)
+    """Desenha a planta usando sprite do estágio correspondente"""
+    if tipo_semente in SPRITES_PLANTAS and estagio in SPRITES_PLANTAS[tipo_semente]:
+        sprite = SPRITES_PLANTAS[tipo_semente][estagio]
+        superficie.blit(sprite, (x, y))
+    else:
+        # Fallback: desenhar círculo colorido se sprite não existir
+        cor = TIPOS_SEMENTE.get(tipo_semente, {}).get('cor', (255, 255, 255))
+        tamanho = min(estagio * 4, 30)
+        if estagio == 7:
+            cor = (139, 69, 19)
+        pygame.draw.circle(superficie, cor, (x + TAMANHO_CELULA // 2, y + TAMANHO_CELULA // 2), tamanho // 2)
 
 def atualizar_plantas():
     tempo_atual = time.time()
