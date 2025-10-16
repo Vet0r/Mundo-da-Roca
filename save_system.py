@@ -8,7 +8,7 @@ class SaveSystem:
     SAVE_FILE = "fazenda_save.json"
     
     @staticmethod
-    def save_game(dinheiro, sementes, fazenda):
+    def save_game(dinheiro, sementes, fazenda, terra_adubada=None):
         try:
             tempo_atual = time.time()
             fazenda_serializada = {}
@@ -21,10 +21,16 @@ class SaveSystem:
                     'tempo_decorrido': tempo_decorrido
                 }
             
+            # Serializar terra adubada
+            terra_adubada_lista = []
+            if terra_adubada:
+                terra_adubada_lista = [list(pos) for pos in terra_adubada]
+            
             dados_save = {
                 'dinheiro': dinheiro,
                 'sementes': sementes,
                 'fazenda': fazenda_serializada,
+                'terra_adubada': terra_adubada_lista,
                 'data_save': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             

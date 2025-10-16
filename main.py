@@ -35,12 +35,18 @@ TIPOS_SEMENTE = {
 
 TAMANHO_CELULA = 40
 
+terra_img = pygame.image.load("terra.png")
+terra_img = pygame.transform.scale(terra_img, (TAMANHO_CELULA, TAMANHO_CELULA))
+
+terra_adubada = set()
+
 if escolha_menu == "continuar":
     dados_carregados = SaveSystem.load_game()
     if dados_carregados:
         dinheiro = dados_carregados['dinheiro']
         sementes = dados_carregados['sementes']
         fazenda = dados_carregados['fazenda']
+        terra_adubada = set(tuple(pos) for pos in dados_carregados.get('terra_adubada', []))
         print(f"Jogo carregado! Data: {dados_carregados['data_save']}")
     else:
         print("Erro ao carregar jogo, iniciando novo jogo...")
@@ -56,6 +62,7 @@ semente_selecionada = 'milho'
 loja_aberta = False
 item_selecionado_loja = 0
 espaco_pressionado = False
+modo_adubar = False
 
 def desenhar_planta(superficie, x, y, tipo_semente, estagio):
     cor = TIPOS_SEMENTE[tipo_semente]['cor']
@@ -91,11 +98,20 @@ def atualizar_plantas():
     for posicao in plantas_para_remover:
         del fazenda[posicao]
 
+def adubar_terra(grid_x, grid_y):
+    """Aduba uma célula de terra"""
+    posicao = (grid_x, grid_y)
+    if posicao not in fazenda and posicao not in terra_adubada:
+        terra_adubada.add(posicao)
+        return True
+    return False
+
 def plantar_semente(grid_x, grid_y, tipo):
+    """Planta uma semente (requer terra adubada)"""
     global dinheiro
     
     posicao = (grid_x, grid_y)
-    if posicao not in fazenda and sementes[tipo] > 0:
+    if posicao not in fazenda and sementes[tipo] > 0 and posicao in terra_adubada:
         fazenda[posicao] = {
             'tipo': tipo,
             'estagio': 1,
@@ -106,6 +122,7 @@ def plantar_semente(grid_x, grid_y, tipo):
     return False
 
 def colher_planta(grid_x, grid_y):
+    """Colhe uma planta madura e remove a terra adubada"""
     global dinheiro
     
     posicao = (grid_x, grid_y)
@@ -115,6 +132,8 @@ def colher_planta(grid_x, grid_y):
             valor = TIPOS_SEMENTE[planta['tipo']]['valor_colheita']
             dinheiro += valor
             del fazenda[posicao]
+            if posicao in terra_adubada:
+                terra_adubada.discard(posicao)
             return True
     return False
 
@@ -135,17 +154,21 @@ def desenhar_interface():
         tela.blit(texto_semente, (20, y_offset))
         y_offset += 25
     
+    modo_texto = "MODO: ADUBAR" if modo_adubar else "MODO: PLANTAR"
+    cor_modo = (255, 200, 0) if modo_adubar else (0, 255, 100)
+    texto_modo = fonte_titulo.render(modo_texto, True, cor_modo)
+    tela.blit(texto_modo, (20, 130))
+    
     instrucoes = [
-        "ESPAÇO: Plantar/Colher",
+        "A: Alternar Modo Adubar/Plantar",
+        "ESPAÇO: Ação (adubar ou plantar/colher)",
         "Segurar ESPAÇO: Ação contínua",
         "1,2,3: Selecionar semente",
         "L: Abrir/Fechar Loja",
         "S: Salvar jogo",
-        "Estágio 6: Colher",
-        "Estágio 7: Estragado",
     ]
     
-    y_offset = 380
+    y_offset = 360
     for instrucao in instrucoes:
         texto = fonte.render(instrucao, True, (255, 255, 255))
         tela.blit(texto, (20, y_offset))
@@ -207,11 +230,15 @@ def desenhar_loja():
         y_offset += 18
 
 def tentar_acao_na_posicao(pos_x, pos_y):
+    """Executa ação baseada no modo atual"""
     grid_x = pos_x // TAMANHO_CELULA
     grid_y = pos_y // TAMANHO_CELULA
     
-    if not colher_planta(grid_x, grid_y):
-        plantar_semente(grid_x, grid_y, semente_selecionada)
+    if modo_adubar:
+        adubar_terra(grid_x, grid_y)
+    else:
+        if not colher_planta(grid_x, grid_y):
+            plantar_semente(grid_x, grid_y, semente_selecionada)
 
 def comprar_semente(tipo, quantidade=1):
     global dinheiro
@@ -232,7 +259,7 @@ tempo_mensagem = 0
 while rodando:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
-            if SaveSystem.save_game(dinheiro, sementes, fazenda):
+            if SaveSystem.save_game(dinheiro, sementes, fazenda, terra_adubada):
                 print("Jogo salvo automaticamente!")
             rodando = False
         
@@ -258,7 +285,11 @@ while rodando:
                         print("Dinheiro insuficiente!")
             
             elif not loja_aberta:
-                if evento.key == pygame.K_1:
+                if evento.key == pygame.K_a:
+                    modo_adubar = not modo_adubar
+                    print(f"Modo: {'ADUBAR' if modo_adubar else 'PLANTAR'}")
+                
+                elif evento.key == pygame.K_1:
                     semente_selecionada = 'milho'
                 elif evento.key == pygame.K_2:
                     semente_selecionada = 'tomate'
@@ -269,7 +300,7 @@ while rodando:
                     tentar_acao_na_posicao(x + 20, y + 37)
                 
                 elif evento.key == pygame.K_s:
-                    if SaveSystem.save_game(dinheiro, sementes, fazenda):
+                    if SaveSystem.save_game(dinheiro, sementes, fazenda, terra_adubada):
                         mensagem_save = "Jogo salvo com sucesso!"
                         tempo_mensagem = time.time()
                         print("Jogo salvo!")
@@ -305,6 +336,11 @@ while rodando:
         pygame.draw.line(tela, (100, 100, 100), (i, 0), (i, ALTURA), 1)
     for j in range(0, ALTURA, TAMANHO_CELULA):
         pygame.draw.line(tela, (100, 100, 100), (0, j), (LARGURA, j), 1)
+    
+    for (grid_x, grid_y) in terra_adubada:
+        x_pos = grid_x * TAMANHO_CELULA
+        y_pos = grid_y * TAMANHO_CELULA
+        tela.blit(terra_img, (x_pos, y_pos))
     
     for (grid_x, grid_y), planta in fazenda.items():
         x_pos = grid_x * TAMANHO_CELULA
