@@ -19,7 +19,6 @@ LARGURA, ALTURA = 1256, 768
 tela = pygame.display.set_mode((LARGURA, ALTURA))
 pygame.display.set_caption("Fazenda Virtual")
 
-# Carregar imagens de assets
 char_img = pygame.image.load("assests/char.png")
 char_img = pygame.transform.scale(char_img, (40, 75))
 
@@ -30,18 +29,15 @@ velocidade = 5
 
 TAMANHO_CELULA = 40
 
-# Carregar terra adubada
 terra_img = pygame.image.load("assests/terra.png")
 terra_img = pygame.transform.scale(terra_img, (TAMANHO_CELULA, TAMANHO_CELULA))
 
-# Carregar sprites de crescimento para cada tipo de planta
 SPRITES_PLANTAS = {
     'milho': {},
     'tomate': {},
     'alface': {}
 }
 
-# Carregar todos os estágios (1-7) para cada tipo de planta
 for tipo in ['milho', 'tomate', 'alface']:
     for estagio in range(1, 8):
         caminho = f"assests/{tipo}/{tipo}_{estagio}.png"
@@ -49,7 +45,6 @@ for tipo in ['milho', 'tomate', 'alface']:
         img = pygame.transform.scale(img, (TAMANHO_CELULA, TAMANHO_CELULA))
         SPRITES_PLANTAS[tipo][estagio] = img
 
-# Configurações das sementes
 TIPOS_SEMENTE = {
     'milho': {'cor': (255, 255, 0), 'preco': 10, 'valor_colheita': 25, 'tempo_crescimento': 5},
     'tomate': {'cor': (255, 0, 0), 'preco': 15, 'valor_colheita': 40, 'tempo_crescimento': 8},
@@ -88,7 +83,6 @@ def desenhar_planta(superficie, x, y, tipo_semente, estagio):
         sprite = SPRITES_PLANTAS[tipo_semente][estagio]
         superficie.blit(sprite, (x, y))
     else:
-        # Fallback: desenhar círculo colorido se sprite não existir
         cor = TIPOS_SEMENTE.get(tipo_semente, {}).get('cor', (255, 255, 255))
         tamanho = min(estagio * 4, 30)
         if estagio == 7:
