@@ -117,22 +117,26 @@ def adubar_terra(grid_x, grid_y):
 
 def plantar_semente(grid_x, grid_y, tipo):
     """Planta uma semente (requer terra adubada)"""
-    global dinheiro
+    global dinheiro, aviso_solo, tempo_aviso
     
     posicao = (grid_x, grid_y)
-    if posicao not in fazenda and sementes[tipo] > 0 and posicao in terra_adubada:
-        fazenda[posicao] = {
-            'tipo': tipo,
-            'estagio': 1,
-            'tempo_plantio': time.time()
-        }
-        sementes[tipo] -= 1
-        return True
+    if posicao not in fazenda and sementes[tipo] > 0:
+        if posicao in terra_adubada:
+            fazenda[posicao] = {
+                'tipo': tipo,
+                'estagio': 1,
+                'tempo_plantio': time.time()
+            }
+            sementes[tipo] -= 1
+            return True
+        else:
+            aviso_solo = True
+            tempo_aviso = time.time()
     return False
 
 def colher_planta(grid_x, grid_y):
     """Colhe uma planta madura e remove a terra adubada"""
-    global dinheiro
+    global dinheiro, aviso_colheita, tempo_aviso_colheita
     
     posicao = (grid_x, grid_y)
     if posicao in fazenda:
@@ -144,6 +148,9 @@ def colher_planta(grid_x, grid_y):
             if posicao in terra_adubada:
                 terra_adubada.discard(posicao)
             return True
+        elif planta['estagio'] < 6:
+            aviso_colheita = True
+            tempo_aviso_colheita = time.time()
     return False
 
 def desenhar_interface():
@@ -264,6 +271,10 @@ rodando = True
 relogio = pygame.time.Clock()
 mensagem_save = ""
 tempo_mensagem = 0
+aviso_solo = False
+tempo_aviso = 0
+aviso_colheita = False
+tempo_aviso_colheita = 0
 
 while rodando:
     for evento in pygame.event.get():
@@ -367,6 +378,27 @@ while rodando:
     
     if loja_aberta:
         desenhar_loja()
+    
+    # Desenhar aviso de preparo do solo
+    # Avisos flutuantes
+    for mostrar_aviso, tempo_atual_aviso, mensagem in [
+        (aviso_solo, tempo_aviso, "Prepare o solo antes do plantio!"),
+        (aviso_colheita, tempo_aviso_colheita, "Você ainda não pode fazer a colheita dessa planta")
+    ]:
+        if mostrar_aviso and time.time() - tempo_atual_aviso < 2:  # Mostra o aviso por 2 segundos
+            aviso = fonte.render(mensagem, True, (255, 100, 100))
+            aviso_rect = aviso.get_rect()
+            aviso_rect.centerx = x + char_img.get_width() // 2
+            aviso_rect.bottom = y - 10
+            
+            # Desenhar fundo semi-transparente
+            s = pygame.Surface((aviso_rect.width + 20, aviso_rect.height + 10))
+            s.set_alpha(128)
+            s.fill((0, 0, 0))
+            tela.blit(s, (aviso_rect.x - 10, aviso_rect.y - 5))
+            
+            # Desenhar texto
+            tela.blit(aviso, aviso_rect)
     
     pygame.display.update()
     relogio.tick(60)
