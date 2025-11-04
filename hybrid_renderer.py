@@ -13,9 +13,17 @@ import platform
 # CONFIGURAR GPU DEDICADA ANTES DE IMPORTAR OPENGL
 # ============================================================
 
-# NVIDIA GPU
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+# NVIDIA GPU - Configuração Agressiva para RTX 3050
+os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'  # Usar ordem PCI (mais confiável)
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'         # GPU 0 (sua 3050)
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'         # Bloquear para mais estabilidade
+os.environ['CUDA_FORCE_PTX_JIT'] = '1'           # Forçar JIT compilation
+os.environ['CUDNN_ENABLED'] = '1'                # Habilitar CUDNN se disponível
+
+# Linux NVIDIA
+if platform.system() == "Linux":
+    os.environ['LD_LIBRARY_PATH'] = '/usr/local/cuda/lib64:/opt/cuda/lib64:' + \
+                                    os.environ.get('LD_LIBRARY_PATH', '')
 
 # AMD GPU
 os.environ['HIP_DEVICE'] = '0'
