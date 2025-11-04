@@ -9,14 +9,15 @@ class Player:
         self.sementes = {'milho': 5, 'tomate': 3, 'alface': 2}
         self.semente_selecionada = 'milho'
     
-    def mover(self, teclas, largura, altura):
-        if teclas[0] and self.x > 0:
+    def mover(self, teclas, largura=None, altura=None):
+        # Mapa infinito - sem restrições de borda
+        if teclas[0]:
             self.x -= self.velocidade
-        if teclas[1] and self.x < largura - 40:
+        if teclas[1]:
             self.x += self.velocidade
-        if teclas[2] and self.y > 0:
+        if teclas[2]:
             self.y -= self.velocidade
-        if teclas[3] and self.y < altura - 75:
+        if teclas[3]:
             self.y += self.velocidade
     
     def get_grid_position(self):

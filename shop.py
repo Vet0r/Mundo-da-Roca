@@ -46,7 +46,7 @@ class Shop:
     
     def desenhar(self, tela, worker_system=None):
         largura_loja = 450
-        altura_loja = 400
+        altura_loja = 500
         x_loja = (self.largura - largura_loja) // 2
         y_loja = (self.altura - altura_loja) // 2
         
@@ -107,16 +107,24 @@ class Shop:
         
         instrucoes = [
             "↑↓: Navegar | TAB: Trocar aba",
-            "ENTER: Comprar 1 semente",
-            "SHIFT+ENTER: Comprar 5 sementes",
+            "",
+            "Quantidade de sementes:",
+            "  1: Comprar 1   |   5: Comprar 5",
+            "  0: Comprar 10",
+            "  SHIFT+ENTER: Comprar 50",
+            "  ALT+ENTER: Comprar 100",
+            "",
             "L ou ESC: Fechar loja"
         ]
         
-        y_offset += 20
+        y_offset += 10
         for instrucao in instrucoes:
-            texto = self.fonte.render(instrucao, True, CORES['cinza_info'])
-            tela.blit(texto, (x_loja + 20, y_offset))
-            y_offset += 20
+            if instrucao == "":
+                y_offset += 10
+            else:
+                texto = self.fonte.render(instrucao, True, CORES['cinza_info'])
+                tela.blit(texto, (x_loja + 20, y_offset))
+                y_offset += 20
     
     def _desenhar_trabalhadores(self, tela, x_loja, y_loja, y_offset, largura_loja, worker_system):
         tipos_trabalhador = [

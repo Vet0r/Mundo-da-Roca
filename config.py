@@ -6,9 +6,9 @@ LARGURA, ALTURA = 1256, 768
 TAMANHO_CELULA = 40
 FPS = 60
 
-POCO_X = LARGURA // (2 * TAMANHO_CELULA)
-POCO_Y = ALTURA // (2 * TAMANHO_CELULA)
-POCO_POS = (POCO_X, POCO_Y)
+# Posição do poço no mundo (coordenadas de grid)
+# Jogador inicia próximo ao poço
+POCO_POS = (0, 0)
 
 TIPOS_SEMENTE = {
     'milho': {'cor': (255, 255, 0), 'preco': 10, 'valor_colheita': 25, 'tempo_crescimento': 5},

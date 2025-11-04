@@ -43,7 +43,6 @@ class GameController:
         grid_y = pos_y // TAMANHO_CELULA
         
         if self.modo_limpar:
-            # Tenta remover planta podre primeiro, se não houver, remove água
             if not self.farm_system.remover_planta_podre(grid_x, grid_y):
                 self.water_system.remover_agua(grid_x, grid_y)
         elif self.modo_agua:

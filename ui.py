@@ -86,47 +86,72 @@ class UI:
                 cor = (139, 69, 19)
             pygame.draw.circle(tela, cor, (x + TAMANHO_CELULA // 2, y + TAMANHO_CELULA // 2), tamanho // 2)
     
-    def desenhar_cenario(self, tela, sprites, water_system, farm_system, largura, altura):
-        for i in range(0, largura, sprites['grama'].get_width()):
-            for j in range(0, altura, sprites['grama'].get_height()):
-                tela.blit(sprites['grama'], (i, j))
+    def desenhar_cenario(self, tela, sprites, water_system, farm_system, largura, altura, camera):
+        # Calcular área visível em coordenadas de grid
+        min_grid_x = int(camera.offset_x // TAMANHO_CELULA) - 2
+        max_grid_x = int((camera.offset_x + largura) // TAMANHO_CELULA) + 2
+        min_grid_y = int(camera.offset_y // TAMANHO_CELULA) - 2
+        max_grid_y = int((camera.offset_y + altura) // TAMANHO_CELULA) + 2
         
-        for i in range(0, largura, TAMANHO_CELULA):
-            pygame.draw.line(tela, CORES['grade'], (i, 0), (i, altura), 1)
-        for j in range(0, altura, TAMANHO_CELULA):
-            pygame.draw.line(tela, CORES['grade'], (0, j), (largura, j), 1)
+        # Desenhar grama de fundo
+        grama_width = sprites['grama'].get_width()
+        grama_height = sprites['grama'].get_height()
         
+        inicio_x = int((camera.offset_x // grama_width) * grama_width)
+        inicio_y = int((camera.offset_y // grama_height) * grama_height)
+        
+        for i in range(inicio_x, int(camera.offset_x + largura + grama_width), grama_width):
+            for j in range(inicio_y, int(camera.offset_y + altura + grama_height), grama_height):
+                tela_x, tela_y = camera.aplicar(i, j)
+                tela.blit(sprites['grama'], (tela_x, tela_y))
+        
+        # Desenhar grade
+        for i in range(min_grid_x, max_grid_x + 1):
+            mundo_x = i * TAMANHO_CELULA
+            tela_x, _ = camera.aplicar(mundo_x, 0)
+            pygame.draw.line(tela, CORES['grade'], (tela_x, 0), (tela_x, altura), 1)
+        
+        for j in range(min_grid_y, max_grid_y + 1):
+            mundo_y = j * TAMANHO_CELULA
+            _, tela_y = camera.aplicar(0, mundo_y)
+            pygame.draw.line(tela, CORES['grade'], (0, tela_y), (largura, tela_y), 1)
+        
+        # Desenhar terra aguada (apenas células visíveis)
         for (grid_x, grid_y) in water_system.terra_aguada:
-            x_pos = grid_x * TAMANHO_CELULA
-            y_pos = grid_y * TAMANHO_CELULA
-            tela.blit(sprites['terra_aguada'], (x_pos, y_pos))
+            if min_grid_x <= grid_x <= max_grid_x and min_grid_y <= grid_y <= max_grid_y:
+                tela_x, tela_y = camera.aplicar_grid(grid_x, grid_y, TAMANHO_CELULA)
+                tela.blit(sprites['terra_aguada'], (tela_x, tela_y))
         
+        # Desenhar terra adubada (apenas células visíveis)
         for (grid_x, grid_y) in farm_system.terra_adubada:
-            x_pos = grid_x * TAMANHO_CELULA
-            y_pos = grid_y * TAMANHO_CELULA
-            tela.blit(sprites['terra'], (x_pos, y_pos))
+            if min_grid_x <= grid_x <= max_grid_x and min_grid_y <= grid_y <= max_grid_y:
+                tela_x, tela_y = camera.aplicar_grid(grid_x, grid_y, TAMANHO_CELULA)
+                tela.blit(sprites['terra'], (tela_x, tela_y))
         
+        # Desenhar poço
         poco_x = POCO_POS[0] * TAMANHO_CELULA
         poco_y = POCO_POS[1] * TAMANHO_CELULA
-        tela.blit(sprites['poco'], (poco_x, poco_y))
+        tela_x, tela_y = camera.aplicar(poco_x, poco_y)
+        tela.blit(sprites['poco'], (tela_x, tela_y))
         
+        # Desenhar buracos com água (apenas células visíveis)
         for (grid_x, grid_y) in water_system.buracos_com_agua:
-            x_pos = grid_x * TAMANHO_CELULA
-            y_pos = grid_y * TAMANHO_CELULA
-            tela.blit(sprites['agua'], (x_pos, y_pos))
+            if min_grid_x <= grid_x <= max_grid_x and min_grid_y <= grid_y <= max_grid_y:
+                tela_x, tela_y = camera.aplicar_grid(grid_x, grid_y, TAMANHO_CELULA)
+                tela.blit(sprites['agua'], (tela_x, tela_y))
         
+        # Desenhar plantas (apenas células visíveis)
         for (grid_x, grid_y), planta in farm_system.fazenda.items():
-            x_pos = grid_x * TAMANHO_CELULA
-            y_pos = grid_y * TAMANHO_CELULA
-            self.desenhar_planta(tela, x_pos, y_pos, planta['tipo'], planta['estagio'], sprites)
+            if min_grid_x <= grid_x <= max_grid_x and min_grid_y <= grid_y <= max_grid_y:
+                tela_x, tela_y = camera.aplicar_grid(grid_x, grid_y, TAMANHO_CELULA)
+                self.desenhar_planta(tela, tela_x, tela_y, planta['tipo'], planta['estagio'], sprites)
     
-    def desenhar_cursor(self, tela, player):
+    def desenhar_cursor(self, tela, player, camera):
         grid_x, grid_y = player.get_grid_position()
-        x_pos = grid_x * TAMANHO_CELULA
-        y_pos = grid_y * TAMANHO_CELULA
-        pygame.draw.rect(tela, CORES['texto'], (x_pos, y_pos, TAMANHO_CELULA, TAMANHO_CELULA), 2)
+        tela_x, tela_y = camera.aplicar_grid(grid_x, grid_y, TAMANHO_CELULA)
+        pygame.draw.rect(tela, CORES['texto'], (tela_x, tela_y, TAMANHO_CELULA, TAMANHO_CELULA), 2)
     
-    def desenhar_trabalhadores(self, tela, worker_system, sprites):
+    def desenhar_trabalhadores(self, tela, worker_system, sprites, camera):
         cores_trabalhador = {
             'cultivador': (100, 255, 100),
             'coletador': (255, 215, 0),
@@ -134,20 +159,25 @@ class UI:
         }
         
         for tipo, x, y in worker_system.obter_trabalhadores_ativos():
-            cor = cores_trabalhador.get(tipo, (255, 255, 255))
+            # Converter posição do mundo para tela
+            tela_x, tela_y = camera.aplicar(x, y)
             
-            corpo_rect = pygame.Rect(int(x), int(y) + 10, 25, 35)
-            pygame.draw.rect(tela, cor, corpo_rect, border_radius=5)
-            pygame.draw.rect(tela, (0, 0, 0), corpo_rect, 2, border_radius=5)
-            
-            pygame.draw.circle(tela, cor, (int(x + 12), int(y + 8)), 8)
-            pygame.draw.circle(tela, (0, 0, 0), (int(x + 12), int(y + 8)), 8, 2)
-            
-            icone_map = {
-                'cultivador': '🌱',
-                'coletador': '🧺',
-                'adubador': '🪴'
-            }
-            icone = icone_map.get(tipo, '👷')
-            texto_icone = self.fonte.render(icone, True, (0, 0, 0))
-            tela.blit(texto_icone, (int(x + 2), int(y + 18)))
+            # Verificar se está visível
+            if -50 <= tela_x <= tela.get_width() + 50 and -50 <= tela_y <= tela.get_height() + 50:
+                cor = cores_trabalhador.get(tipo, (255, 255, 255))
+                
+                corpo_rect = pygame.Rect(int(tela_x), int(tela_y) + 10, 25, 35)
+                pygame.draw.rect(tela, cor, corpo_rect, border_radius=5)
+                pygame.draw.rect(tela, (0, 0, 0), corpo_rect, 2, border_radius=5)
+                
+                pygame.draw.circle(tela, cor, (int(tela_x + 12), int(tela_y + 8)), 8)
+                pygame.draw.circle(tela, (0, 0, 0), (int(tela_x + 12), int(tela_y + 8)), 8, 2)
+                
+                icone_map = {
+                    'cultivador': '🌱',
+                    'coletador': '🧺',
+                    'adubador': '🪴'
+                }
+                icone = icone_map.get(tipo, '👷')
+                texto_icone = self.fonte.render(icone, True, (0, 0, 0))
+                tela.blit(texto_icone, (int(tela_x + 2), int(tela_y + 18)))
