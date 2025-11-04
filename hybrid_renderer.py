@@ -1,24 +1,85 @@
 """
 Renderizador híbrido - OpenGL com fallback para Pygame
 Detecta automaticamente disponibilidade de OpenGL
+Força GPU dedicada quando disponível
 """
 
 import pygame
 import sys
 import os
+import platform
+
+# ============================================================
+# CONFIGURAR GPU DEDICADA ANTES DE IMPORTAR OPENGL
+# ============================================================
+
+# NVIDIA GPU
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+# AMD GPU
+os.environ['HIP_DEVICE'] = '0'
+os.environ['GPU_DEVICE_ORDINAL'] = '0'
+
+# Intel GPU
+os.environ['I915_DEBUG'] = '1'
+
+# macOS - Forçar GPU dedicada
+if platform.system() == "Darwin":
+    os.environ['METAL_DEVICE_AFFINITY'] = '1'
+    os.environ['MTL_DEVICE_ID'] = '0'
+    os.environ['GPU_DEVICE_ORDINAL'] = '0'
 
 # Flag de disponibilidade
 OPENGL_AVAILABLE = False
 RENDERER_TYPE = "PYGAME"  # Padrão
+GPU_TYPE = "Não detectada"  # Tipo de GPU
+GPU_NAME = "Não detectada"  # Nome da GPU
 
 def check_opengl_support():
     """Verificar se OpenGL está disponível no sistema"""
-    global OPENGL_AVAILABLE, RENDERER_TYPE
+    global OPENGL_AVAILABLE, RENDERER_TYPE, GPU_TYPE, GPU_NAME
     
     try:
-        from OpenGL.GL import glGetString, GL_VERSION
+        from OpenGL.GL import glGetString, GL_VERSION, GL_RENDERER, GL_VENDOR
         import numpy
         import glm
+        
+        # Detectar GPU
+        try:
+            pygame.init()
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+            pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
+            
+            test_display = pygame.display.set_mode((100, 100), pygame.OPENGL | pygame.HIDDEN)
+            
+            renderer_str = glGetString(GL_RENDERER)
+            vendor_str = glGetString(GL_VENDOR)
+            
+            if renderer_str:
+                GPU_NAME = renderer_str.decode('utf-8', errors='ignore')
+            if vendor_str:
+                GPU_TYPE = vendor_str.decode('utf-8', errors='ignore')
+            
+            # Detectar tipo de GPU dedicada
+            if GPU_NAME and GPU_TYPE:
+                if 'NVIDIA' in GPU_TYPE or 'NVIDIA' in GPU_NAME:
+                    print("✓ GPU NVIDIA Detectada (Dedicada)")
+                elif 'AMD' in GPU_TYPE or 'Radeon' in GPU_NAME:
+                    print("✓ GPU AMD Detectada (Dedicada)")
+                elif 'Intel' in GPU_TYPE and 'UHD' not in GPU_NAME:
+                    print("✓ GPU Intel Detectada (Dedicada)")
+                else:
+                    print("✓ GPU Detectada")
+                
+                print(f"  Vendor: {GPU_TYPE}")
+                print(f"  Renderer: {GPU_NAME}")
+            
+            pygame.display.quit()
+        except Exception as gpu_error:
+            print(f"⚠ Aviso ao detectar GPU: {gpu_error}")
+        
         OPENGL_AVAILABLE = True
         RENDERER_TYPE = "OPENGL"
         print("✓ OpenGL e dependências detectadas - Usando GPU")
@@ -196,6 +257,33 @@ class HybridRenderer:
     def get_current_renderer(self):
         """Retornar tipo de renderizador sendo usado"""
         return "OpenGL (GPU)" if self.use_opengl else "Pygame (CPU)"
+    
+    def get_gpu_info(self):
+        """Obter informações de GPU sendo usada"""
+        if self.use_opengl:
+            return {
+                'type': 'OpenGL',
+                'gpu_vendor': GPU_TYPE,
+                'gpu_name': GPU_NAME,
+                'dedicated': self._is_dedicated_gpu()
+            }
+        return {
+            'type': 'Pygame (CPU)',
+            'gpu_vendor': 'N/A',
+            'gpu_name': 'N/A',
+            'dedicated': False
+        }
+    
+    def _is_dedicated_gpu(self):
+        """Verificar se é GPU dedicada"""
+        # GPU dedicada é aquela com NVIDIA, AMD, ou Intel Arc
+        if not GPU_NAME:
+            return False
+        
+        return any(dedic in GPU_NAME for dedic in [
+            'NVIDIA', 'Radeon', 'RTX', 'GTX', 'Tesla',
+            'Arc', 'Quadro', 'Radeon Pro'
+        ])
     
     def cleanup(self):
         """Limpar recursos"""

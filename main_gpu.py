@@ -102,9 +102,24 @@ def processar_eventos(controller, shop, player, ui, farm_system, water_system, w
             
             # Renderizador de debug (pressione 'G' para ver stats)
             elif evento.key == pygame.K_g:
+                print(f"\n{'='*60}")
+                print("INFORMAÇÕES DE GPU")
+                print('='*60)
                 print(f"Renderizador: {RENDERER_TYPE}")
                 print(f"Resolução: {estado_tela['largura']}x{estado_tela['altura']}")
-                print(f"FPS: (verifique a barra de título)")
+                try:
+                    from hybrid_renderer import GPU_TYPE, GPU_NAME
+                    print(f"GPU Vendor: {GPU_TYPE}")
+                    print(f"GPU Name: {GPU_NAME}")
+                    if 'NVIDIA' in GPU_NAME or 'AMD' in GPU_NAME or 'GeForce' in GPU_NAME or 'Radeon' in GPU_NAME:
+                        print("✓ GPU Dedicada detectada")
+                    elif 'Intel' in GPU_NAME and 'UHD' not in GPU_NAME and 'Iris' not in GPU_NAME:
+                        print("✓ GPU Dedicada Intel detectada")
+                    else:
+                        print("⚠ GPU Integrada ou não identificada")
+                except:
+                    pass
+                print('='*60 + "\n")
             
             elif evento.key == pygame.K_l or (evento.key == pygame.K_ESCAPE and shop.aberta):
                 shop.toggle()
@@ -223,7 +238,7 @@ def main():
     """Função principal"""
     # Verificar suporte a OpenGL
     print("\n" + "="*60)
-    print("MUNDO-DA-ROCA - Sistema de Renderização")
+    print("MUNDO-DA-ROCA - Sistema de Renderização com GPU")
     print("="*60)
     check_opengl_support()
     print("\nDica: Pressione 'G' durante o jogo para ver informações")
