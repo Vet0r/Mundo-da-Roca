@@ -4,47 +4,21 @@ import time
 from datetime import datetime
 
 class SaveSystem:
-    
     SAVE_FILE = "fazenda_save.json"
     
     @staticmethod
-    def save_game(dinheiro, sementes, fazenda, terra_adubada=None, buracos_com_agua=None, terra_aguada=None):
+    def save_game(player, farm_system, water_system):
         try:
-            tempo_atual = time.time()
-            fazenda_serializada = {}
-            for posicao, planta in fazenda.items():
-                key = f"{posicao[0]},{posicao[1]}"
-                tempo_decorrido = tempo_atual - planta['tempo_plantio']
-                fazenda_serializada[key] = {
-                    'tipo': planta['tipo'],
-                    'estagio': planta['estagio'],
-                    'tempo_decorrido': tempo_decorrido,
-                    'estragada': planta.get('estragada', False),
-                    'fator_crescimento': planta.get('fator_crescimento', 1.0)
-                }
-            
-            # Serializar terra adubada
-            terra_adubada_lista = []
-            if terra_adubada:
-                terra_adubada_lista = [list(pos) for pos in terra_adubada]
-            
-            # Serializar buracos com água
-            buracos_com_agua_lista = []
-            if buracos_com_agua:
-                buracos_com_agua_lista = [list(pos) for pos in buracos_com_agua]
-            
-            # Serializar terra aguada
-            terra_aguada_lista = []
-            if terra_aguada:
-                terra_aguada_lista = [list(pos) for pos in terra_aguada]
+            dados_farm = farm_system.obter_dados_save()
+            dados_water = water_system.obter_dados_save()
             
             dados_save = {
-                'dinheiro': dinheiro,
-                'sementes': sementes,
-                'fazenda': fazenda_serializada,
-                'terra_adubada': terra_adubada_lista,
-                'buracos_com_agua': buracos_com_agua_lista,
-                'terra_aguada': terra_aguada_lista,
+                'dinheiro': player.dinheiro,
+                'sementes': player.sementes,
+                'fazenda': dados_farm['fazenda'],
+                'terra_adubada': dados_farm['terra_adubada'],
+                'buracos_com_agua': dados_water['buracos_com_agua'],
+                'terra_aguada': dados_water['terra_aguada'],
                 'data_save': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
