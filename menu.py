@@ -8,7 +8,7 @@ class Menu:
         self.largura = largura
         self.altura = altura
         self.tela = pygame.display.set_mode((largura, altura))
-        pygame.display.set_caption("Fazenda Virtual - Menu")
+        pygame.display.set_caption("Mundo da Roça - Menu")
         
         self.fonte_titulo = pygame.font.Font(None, 72)
         self.fonte_opcao = pygame.font.Font(None, 40)
@@ -21,6 +21,10 @@ class Menu:
         self.cor_info = (200, 200, 200)
         self.cor_destaque = (255, 215, 0)
         
+        # Carrega a textura de grama para o background
+        self.grama = pygame.image.load("assets/grama.png")
+        self.grama_rect = self.grama.get_rect()
+        
         self.opcoes = []
         self.opcao_selecionada = 0
         
@@ -28,6 +32,15 @@ class Menu:
         self._configurar_opcoes()
         
         self.save_info = SaveSystem.get_save_info() if self.save_existe else None
+    
+    def _desenhar_background_grama(self):
+        """Desenha a textura de grama repetida como background"""
+        largura_grama = self.grama_rect.width
+        altura_grama = self.grama_rect.height
+        
+        for x in range(0, self.largura, largura_grama):
+            for y in range(0, self.altura, altura_grama):
+                self.tela.blit(self.grama, (x, y))
     
     def _configurar_opcoes(self):
         if self.save_existe:
@@ -44,9 +57,9 @@ class Menu:
             ]
     
     def desenhar(self):
-        self.tela.fill(self.cor_fundo)
+        self._desenhar_background_grama()
         
-        titulo = self.fonte_titulo.render("FAZENDA VIRTUAL", True, self.cor_titulo)
+        titulo = self.fonte_titulo.render("Mundo da Roça", True, self.cor_titulo)
         titulo_rect = titulo.get_rect(center=(self.largura // 2, 100))
         self.tela.blit(titulo, titulo_rect)
         
@@ -127,7 +140,7 @@ class Menu:
                     elif evento.key == pygame.K_ESCAPE:
                         return False
             
-            self.tela.fill(self.cor_fundo)
+            self._desenhar_background_grama()
             
             titulo = self.fonte_opcao.render("Deletar Save?", True, self.cor_titulo)
             titulo_rect = titulo.get_rect(center=(self.largura // 2, 200))

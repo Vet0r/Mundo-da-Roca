@@ -22,7 +22,7 @@ def inicializar_jogo():
     pygame.init()
     # Tela redimensionável com suporte a tela cheia
     tela = pygame.display.set_mode((LARGURA, ALTURA), pygame.RESIZABLE)
-    pygame.display.set_caption("Fazenda Virtual - Mapa Infinito (F11: Tela Cheia)")
+    pygame.display.set_caption("Mundo da Roça - Mapa Infinito (F11: Tela Cheia)")
     
     sprites = carregar_sprites()
     player = Player(x=100, y=100)  # Posição inicial próxima ao poço

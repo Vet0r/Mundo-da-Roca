@@ -1,4 +1,4 @@
-# Fazenda Virtual
+# Mundo da Roça
 
 Um jogo de simulação de fazenda educacional feito em ## 🚀 Como Executar
 ```bash
@@ -120,4 +120,4 @@ python3 main.py
 - Mantenha sempre algumas sementes em estoque
 - Diversifique seus tipos de cultivo para ter colheitas em diferentes tempos
 
-Divirta-se cultivando e expandindo sua fazenda virtual!
+Divirta-se cultivando e expandindo sua Mundo da Roça!
