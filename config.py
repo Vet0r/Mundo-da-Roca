@@ -36,21 +36,21 @@ CORES = {
 
 def carregar_sprites():
     sprites = {
-        'char': pygame.transform.scale(pygame.image.load("assests/char.png"), (40, 75)),
-        'grama': pygame.image.load("assests/grama.png"),
-        'terra': pygame.transform.scale(pygame.image.load("assests/terra.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
-        'terra_aguada': pygame.transform.scale(pygame.image.load("assests/terra_aguada.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
-        'poco': pygame.transform.scale(pygame.image.load("assests/poco.png"), (TAMANHO_CELULA * 2, TAMANHO_CELULA * 2)),
-        'buraco': pygame.transform.scale(pygame.image.load("assests/buraco.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
-        'agua': pygame.transform.scale(pygame.image.load("assests/agua.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
-        'trabalhador': pygame.transform.scale(pygame.image.load("assests/char.png"), (30, 50))
+        'char': pygame.transform.scale(pygame.image.load("assets/char.png"), (40, 75)),
+        'grama': pygame.image.load("assets/grama.png"),
+        'terra': pygame.transform.scale(pygame.image.load("assets/terra.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
+        'terra_aguada': pygame.transform.scale(pygame.image.load("assets/terra_aguada.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
+        'poco': pygame.transform.scale(pygame.image.load("assets/poco.png"), (TAMANHO_CELULA * 2, TAMANHO_CELULA * 2)),
+        'buraco': pygame.transform.scale(pygame.image.load("assets/buraco.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
+        'agua': pygame.transform.scale(pygame.image.load("assets/agua.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
+        'trabalhador': pygame.transform.scale(pygame.image.load("assets/char.png"), (30, 50))
     }
     
     sprites['plantas'] = {}
     for tipo in ['milho', 'tomate', 'alface']:
         sprites['plantas'][tipo] = {}
         for estagio in range(1, 8):
-            caminho = f"assests/{tipo}/{tipo}_{estagio}.png"
+            caminho = f"assets/{tipo}/{tipo}_{estagio}.png"
             img = pygame.image.load(caminho)
             img = pygame.transform.scale(img, (TAMANHO_CELULA, TAMANHO_CELULA))
             sprites['plantas'][tipo][estagio] = img

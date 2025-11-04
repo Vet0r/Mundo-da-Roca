@@ -6,7 +6,7 @@ class Player:
         self.y = y
         self.velocidade = velocidade
         self.dinheiro = 100
-        self.sementes = {'milho': 5, 'tomate': 3, 'alface': 2}
+        self.sementes = {'milho': 20, 'tomate': 10, 'alface': 30}
         self.semente_selecionada = 'milho'
     
     def mover(self, teclas, largura=None, altura=None):

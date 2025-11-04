@@ -57,7 +57,7 @@ class Shop:
         pygame.draw.rect(tela, CORES['loja_fundo'], (x_loja, y_loja, largura_loja, altura_loja))
         pygame.draw.rect(tela, CORES['borda_interface'], (x_loja, y_loja, largura_loja, altura_loja), 3)
         
-        titulo_texto = "🏪 LOJA - " + ("SEMENTES" if self.aba_atual == 'sementes' else "TRABALHADORES")
+        titulo_texto = "LOJA - " + ("SEMENTES" if self.aba_atual == 'sementes' else "TRABALHADORES")
         titulo = self.fonte_titulo.render(titulo_texto, True, CORES['texto'])
         titulo_rect = titulo.get_rect(center=(self.largura // 2, y_loja + 30))
         tela.blit(titulo, titulo_rect)
@@ -104,13 +104,13 @@ class Shop:
             tela.blit(texto_item, (x_loja + 20, y_offset))
             
             if i == self.item_selecionado:
-                seta = self.fonte.render("◄", True, CORES['texto'])
+                seta = self.fonte.render("[<<]", True, CORES['texto'])
                 tela.blit(seta, (x_loja + largura_loja - 50, y_offset))
             
             y_offset += 35
         
         instrucoes = [
-            "↑↓: Navegar | TAB: Trocar aba",
+            "UP/DOWN: Navegar | TAB: Trocar aba",
             "",
             "Quantidade de sementes:",
             "  1: Comprar 1   |   5: Comprar 5",
@@ -152,16 +152,16 @@ class Shop:
             tela.blit(texto_ativos, (x_loja + 20, y_offset + 20))
             
             if i == self.item_selecionado:
-                seta = self.fonte.render("◄", True, CORES['texto'])
+                seta = self.fonte.render("[<<]", True, CORES['texto'])
                 tela.blit(seta, (x_loja + largura_loja - 50, y_offset))
             
             y_offset += 60
         
         instrucoes = [
-            "↑↓: Navegar | TAB: Trocar aba",
+            "UP/DOWN: Navegar | TAB: Trocar aba",
             "ENTER: Contratar trabalhador",
             "",
-            "⚠️ Cada trabalhador custa $1 a cada 20s",
+            "[!] Cada trabalhador custa $1 a cada 20s",
             "Trabalhadores param se você ficar sem $",
             "Voltam a trabalhar quando houver dinheiro",
             "",

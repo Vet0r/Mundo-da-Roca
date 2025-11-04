@@ -21,7 +21,7 @@ class UI:
             cor = TIPOS_SEMENTE[tipo]['cor']
             texto = f"{tipo.capitalize()}: {quantidade}"
             if tipo == player.semente_selecionada:
-                texto += " ◄"
+                texto += " <- Selecionada"
             texto_semente = self.fonte.render(texto, True, cor)
             tela.blit(texto_semente, (20, y_offset))
             y_offset += 25
