@@ -15,6 +15,9 @@ class Worker:
         self.tempo_sem_trabalho = 0
         self.ultimo_check = time.time()
         self.direcao_patrulha = [random.choice([-1, 1]), random.choice([-1, 1])]
+        self.ultimo_pagamento = time.time()
+        self.intervalo_pagamento = 20  # 20 segundos
+        self.custo_manutencao = 1  # $1 por pagamento
     
     def encontrar_proximo_alvo(self, farm_system, water_system, player):
         grid_x = int(self.x // TAMANHO_CELULA)
@@ -102,6 +105,18 @@ class Worker:
     def executar_trabalho(self, farm_system, water_system, player):
         tempo_atual = time.time()
         
+        # Sistema de pagamento: cobrar manutenção a cada 20 segundos
+        if tempo_atual - self.ultimo_pagamento >= self.intervalo_pagamento:
+            if player.dinheiro >= self.custo_manutencao:
+                player.gastar_dinheiro(self.custo_manutencao)
+                self.ultimo_pagamento = tempo_atual
+                print(f"Trabalhador {self.tipo} recebeu pagamento de ${self.custo_manutencao}")
+            else:
+                # Se não tiver dinheiro, trabalhador para de trabalhar mas não é removido
+                self.ativo = False
+                print(f"Trabalhador {self.tipo} parou de trabalhar por falta de pagamento!")
+                return False
+        
         if tempo_atual - self.ultimo_trabalho < self.intervalo_trabalho:
             return False
         
@@ -109,7 +124,7 @@ class Worker:
             self.alvo_atual = self.encontrar_proximo_alvo(farm_system, water_system, player)
             
             if not self.alvo_atual:
-                self.ativo = False
+                # Não tem trabalho disponível, mas trabalhador continua existindo
                 return False
         
         if self.mover_para_alvo():
@@ -160,9 +175,9 @@ class WorkerSystem:
     def __init__(self):
         self.trabalhadores = []
         self.tipos_trabalhador = {
-            'cultivador': {'nome': 'Cultivador', 'preco': 300, 'descricao': 'Planta sementes'},
-            'coletador': {'nome': 'Coletador', 'preco': 300, 'descricao': 'Colhe plantas'},
-            'adubador': {'nome': 'Adubador', 'preco': 300, 'descricao': 'Aduba terra'}
+            'cultivador': {'nome': 'Cultivador', 'preco': 300, 'descricao': 'Planta sementes', 'custo_manutencao': 1},
+            'coletador': {'nome': 'Coletador', 'preco': 300, 'descricao': 'Colhe plantas', 'custo_manutencao': 1},
+            'adubador': {'nome': 'Adubador', 'preco': 300, 'descricao': 'Aduba terra', 'custo_manutencao': 1}
         }
     
     def contratar_trabalhador(self, tipo, player, posicao_spawn):
@@ -175,33 +190,38 @@ class WorkerSystem:
         return False
     
     def atualizar_trabalhadores(self, farm_system, water_system, player):
-        trabalhadores_inativos = []
-        
-        for i, worker in enumerate(self.trabalhadores):
+        for worker in self.trabalhadores:
             if worker.ativo:
                 worker.executar_trabalho(farm_system, water_system, player)
             else:
-                trabalhadores_inativos.append(i)
-        
-        for i in reversed(trabalhadores_inativos):
-            print(f"Trabalhador {self.trabalhadores[i].tipo} finalizou o serviço!")
-            del self.trabalhadores[i]
+                # Tentar reativar trabalhador se houver dinheiro
+                tempo_atual = time.time()
+                if tempo_atual - worker.ultimo_pagamento >= worker.intervalo_pagamento:
+                    if player.dinheiro >= worker.custo_manutencao:
+                        worker.ativo = True
+                        print(f"Trabalhador {worker.tipo} voltou ao trabalho!")
     
     def obter_trabalhadores_ativos(self):
-        return [(w.tipo, w.x, w.y) for w in self.trabalhadores if w.ativo]
+        # Retorna todos os trabalhadores, não apenas os ativos
+        return [(w.tipo, w.x, w.y, w.ativo) for w in self.trabalhadores]
     
     def contar_trabalhadores_por_tipo(self):
-        contagem = {'cultivador': 0, 'coletador': 0, 'adubador': 0}
+        contagem_ativos = {'cultivador': 0, 'coletador': 0, 'adubador': 0}
+        contagem_total = {'cultivador': 0, 'coletador': 0, 'adubador': 0}
         for worker in self.trabalhadores:
+            contagem_total[worker.tipo] += 1
             if worker.ativo:
-                contagem[worker.tipo] += 1
-        return contagem
+                contagem_ativos[worker.tipo] += 1
+        return contagem_ativos, contagem_total
     
     def carregar_dados(self, dados_trabalhadores):
         self.trabalhadores = []
+        tempo_atual = time.time()
         for dado in dados_trabalhadores:
             worker = Worker(dado['tipo'], (dado['x'], dado['y']))
             worker.ativo = dado.get('ativo', True)
+            # Restaurar tempo de último pagamento
+            worker.ultimo_pagamento = dado.get('ultimo_pagamento', tempo_atual)
             self.trabalhadores.append(worker)
     
     def obter_dados_save(self):
@@ -209,5 +229,6 @@ class WorkerSystem:
             'tipo': w.tipo,
             'x': w.x,
             'y': w.y,
-            'ativo': w.ativo
+            'ativo': w.ativo,
+            'ultimo_pagamento': w.ultimo_pagamento
         } for w in self.trabalhadores]

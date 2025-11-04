@@ -57,6 +57,7 @@ class UI:
             "1,2,3: Selecionar semente",
             "L: Abrir/Fechar Loja",
             "S: Salvar jogo",
+            "F11: Alternar Tela Cheia",
         ]
         
         y_offset = 390
@@ -158,7 +159,7 @@ class UI:
             'adubador': (139, 69, 19)
         }
         
-        for tipo, x, y in worker_system.obter_trabalhadores_ativos():
+        for tipo, x, y, ativo in worker_system.obter_trabalhadores_ativos():
             # Converter posição do mundo para tela
             tela_x, tela_y = camera.aplicar(x, y)
             
@@ -166,12 +167,21 @@ class UI:
             if -50 <= tela_x <= tela.get_width() + 50 and -50 <= tela_y <= tela.get_height() + 50:
                 cor = cores_trabalhador.get(tipo, (255, 255, 255))
                 
+                # Se inativo, deixar com cor mais escura/opaca
+                if not ativo:
+                    cor = tuple(c // 3 for c in cor)  # Escurecer cor
+                
                 corpo_rect = pygame.Rect(int(tela_x), int(tela_y) + 10, 25, 35)
                 pygame.draw.rect(tela, cor, corpo_rect, border_radius=5)
                 pygame.draw.rect(tela, (0, 0, 0), corpo_rect, 2, border_radius=5)
                 
                 pygame.draw.circle(tela, cor, (int(tela_x + 12), int(tela_y + 8)), 8)
                 pygame.draw.circle(tela, (0, 0, 0), (int(tela_x + 12), int(tela_y + 8)), 8, 2)
+                
+                # Adicionar "Z" para trabalhadores inativos (dormindo)
+                if not ativo:
+                    texto_z = self.fonte.render("Z", True, (200, 200, 200))
+                    tela.blit(texto_z, (int(tela_x + 20), int(tela_y - 5)))
                 
                 icone_map = {
                     'cultivador': '🌱',

@@ -1,15 +1,23 @@
 from config import LARGURA, ALTURA
 
 class Camera:
-    def __init__(self, player):
+    def __init__(self, player, largura=LARGURA, altura=ALTURA):
         self.player = player
         self.offset_x = 0
         self.offset_y = 0
+        self.largura_tela = largura
+        self.altura_tela = altura
     
-    def atualizar(self):
-        # Centraliza a câmera no jogador
-        self.offset_x = self.player.x - LARGURA // 2
-        self.offset_y = self.player.y - ALTURA // 2
+    def atualizar(self, largura=None, altura=None):
+        # Atualizar dimensões da tela se fornecidas
+        if largura is not None:
+            self.largura_tela = largura
+        if altura is not None:
+            self.altura_tela = altura
+        
+        # Centraliza a câmera no jogador usando as dimensões atuais
+        self.offset_x = self.player.x - self.largura_tela // 2
+        self.offset_y = self.player.y - self.altura_tela // 2
     
     def aplicar(self, x, y):
         """Converte coordenadas do mundo para coordenadas da tela"""
@@ -34,5 +42,5 @@ class Camera:
         """Verifica se um objeto está visível na tela"""
         tela_x, tela_y = self.aplicar(mundo_x, mundo_y)
         margem = 100  # Margem extra para renderizar objetos próximos às bordas
-        return (-margem <= tela_x <= LARGURA + margem and 
-                -margem <= tela_y <= ALTURA + margem)
+        return (-margem <= tela_x <= self.largura_tela + margem and 
+                -margem <= tela_y <= self.altura_tela + margem)

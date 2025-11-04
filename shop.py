@@ -21,6 +21,10 @@ class Shop:
         self.aba_atual = 'trabalhadores' if self.aba_atual == 'sementes' else 'sementes'
         self.item_selecionado = 0
     
+    def atualizar_dimensoes(self, largura, altura):
+        self.largura = largura
+        self.altura = altura
+    
     def navegar(self, direcao):
         max_itens = 3 if self.aba_atual == 'sementes' else 3
         if direcao == 'cima':
@@ -133,35 +137,42 @@ class Shop:
             ('adubador', 'Adubador - Aduba terra', (139, 69, 19))
         ]
         
-        contagem = worker_system.contar_trabalhadores_por_tipo() if worker_system else {}
+        contagem_ativos, contagem_total = worker_system.contar_trabalhadores_por_tipo() if worker_system else ({}, {})
         
         for i, (tipo, nome, cor) in enumerate(tipos_trabalhador):
             if i == self.item_selecionado:
-                pygame.draw.rect(tela, CORES['loja_destaque'], (x_loja + 10, y_offset - 5, largura_loja - 20, 40))
+                pygame.draw.rect(tela, CORES['loja_destaque'], (x_loja + 10, y_offset - 5, largura_loja - 20, 55))
             
             texto_item = self.fonte.render(f"{nome} - $300", True, cor)
             tela.blit(texto_item, (x_loja + 20, y_offset))
             
-            ativos = contagem.get(tipo, 0)
-            texto_ativos = self.fonte.render(f"Ativos: {ativos}", True, CORES['cinza_info'])
+            ativos = contagem_ativos.get(tipo, 0)
+            total = contagem_total.get(tipo, 0)
+            texto_ativos = self.fonte.render(f"Trabalhando: {ativos}/{total} (${total}/20s)", True, CORES['cinza_info'])
             tela.blit(texto_ativos, (x_loja + 20, y_offset + 20))
             
             if i == self.item_selecionado:
                 seta = self.fonte.render("◄", True, CORES['texto'])
                 tela.blit(seta, (x_loja + largura_loja - 50, y_offset))
             
-            y_offset += 50
+            y_offset += 60
         
         instrucoes = [
             "↑↓: Navegar | TAB: Trocar aba",
             "ENTER: Contratar trabalhador",
-            "Trabalhador fica ativo até não",
-            "haver mais trabalho disponível",
+            "",
+            "⚠️ Cada trabalhador custa $1 a cada 20s",
+            "Trabalhadores param se você ficar sem $",
+            "Voltam a trabalhar quando houver dinheiro",
+            "",
             "L ou ESC: Fechar loja"
         ]
         
-        y_offset += 20
+        y_offset += 10
         for instrucao in instrucoes:
-            texto = self.fonte.render(instrucao, True, CORES['cinza_info'])
-            tela.blit(texto, (x_loja + 20, y_offset))
-            y_offset += 18
+            if instrucao == "":
+                y_offset += 8
+            else:
+                texto = self.fonte.render(instrucao, True, CORES['cinza_info'])
+                tela.blit(texto, (x_loja + 20, y_offset))
+                y_offset += 18

@@ -20,8 +20,9 @@ def inicializar_jogo():
         sys.exit()
     
     pygame.init()
-    tela = pygame.display.set_mode((LARGURA, ALTURA))
-    pygame.display.set_caption("Fazenda Virtual - Mapa Infinito")
+    # Tela redimensionável com suporte a tela cheia
+    tela = pygame.display.set_mode((LARGURA, ALTURA), pygame.RESIZABLE)
+    pygame.display.set_caption("Fazenda Virtual - Mapa Infinito (F11: Tela Cheia)")
     
     sprites = carregar_sprites()
     player = Player(x=100, y=100)  # Posição inicial próxima ao poço
@@ -33,10 +34,13 @@ def inicializar_jogo():
     controller = GameController(player, farm_system, water_system)
     camera = Camera(player)
     
+    # Estado da tela cheia
+    estado_tela = {'fullscreen': False, 'largura': LARGURA, 'altura': ALTURA}
+    
     if escolha_menu == "continuar":
         carregar_jogo(player, farm_system, water_system, worker_system)
     
-    return tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera
+    return tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera, estado_tela
 
 def carregar_jogo(player, farm_system, water_system, worker_system):
     dados_carregados = SaveSystem.load_game()
@@ -50,15 +54,38 @@ def carregar_jogo(player, farm_system, water_system, worker_system):
     else:
         print("Erro ao carregar jogo, iniciando novo jogo...")
 
-def processar_eventos(controller, shop, player, ui, farm_system, water_system, worker_system):
+def processar_eventos(controller, shop, player, ui, farm_system, water_system, worker_system, tela, estado_tela):
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
             if SaveSystem.save_game(player, farm_system, water_system, worker_system):
                 print("Jogo salvo automaticamente!")
-            return False
+            return False, tela
+        
+        if evento.type == pygame.VIDEORESIZE:
+            # Atualizar dimensões quando a janela é redimensionada
+            estado_tela['largura'] = evento.w
+            estado_tela['altura'] = evento.h
+            shop.atualizar_dimensoes(evento.w, evento.h)
+            print(f"Janela redimensionada para: {evento.w}x{evento.h}")
         
         if evento.type == pygame.KEYDOWN:
-            if evento.key == pygame.K_l or (evento.key == pygame.K_ESCAPE and shop.aberta):
+            if evento.key == pygame.K_F11:
+                # Alternar tela cheia
+                estado_tela['fullscreen'] = not estado_tela['fullscreen']
+                if estado_tela['fullscreen']:
+                    tela = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+                    estado_tela['largura'] = tela.get_width()
+                    estado_tela['altura'] = tela.get_height()
+                    print(f"Tela cheia ativada: {estado_tela['largura']}x{estado_tela['altura']}")
+                else:
+                    tela = pygame.display.set_mode((LARGURA, ALTURA), pygame.RESIZABLE)
+                    estado_tela['largura'] = LARGURA
+                    estado_tela['altura'] = ALTURA
+                    print("Modo janela ativado")
+                shop.atualizar_dimensoes(estado_tela['largura'], estado_tela['altura'])
+                return True, tela
+            
+            elif evento.key == pygame.K_l or (evento.key == pygame.K_ESCAPE and shop.aberta):
                 shop.toggle()
             
             elif shop.aberta:
@@ -67,7 +94,7 @@ def processar_eventos(controller, shop, player, ui, farm_system, water_system, w
             elif not shop.aberta:
                 processar_eventos_jogo(evento, controller, player, ui, farm_system, water_system, worker_system)
     
-    return True
+    return True, tela
 
 def processar_eventos_loja(evento, shop, player, worker_system):
     if evento.key == pygame.K_UP:
@@ -131,21 +158,24 @@ def processar_eventos_jogo(evento, controller, player, ui, farm_system, water_sy
             ui.mostrar_mensagem_save("Erro ao salvar jogo!")
             print("Erro ao salvar!")
 
-def atualizar_jogo(controller, farm_system, water_system, worker_system, player, shop, sprites, camera):
+def atualizar_jogo(controller, farm_system, water_system, worker_system, player, shop, sprites, camera, estado_tela):
     if not shop.aberta:
         teclas = pygame.key.get_pressed()
-        controller.processar_movimento(teclas, LARGURA, ALTURA)
+        controller.processar_movimento(teclas, estado_tela['largura'], estado_tela['altura'])
         
         if teclas[pygame.K_SPACE]:
             controller.executar_acao()
     
-    camera.atualizar()
+    camera.atualizar(estado_tela['largura'], estado_tela['altura'])
     water_system.atualizar_terra_aguada()
     farm_system.atualizar_plantas(water_system)
     worker_system.atualizar_trabalhadores(farm_system, water_system, player)
 
-def desenhar_jogo(tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera):
-    ui.desenhar_cenario(tela, sprites, water_system, farm_system, LARGURA, ALTURA, camera)
+def desenhar_jogo(tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera, estado_tela):
+    largura_atual = estado_tela['largura']
+    altura_atual = estado_tela['altura']
+    
+    ui.desenhar_cenario(tela, sprites, water_system, farm_system, largura_atual, altura_atual, camera)
     
     ui.desenhar_trabalhadores(tela, worker_system, sprites, camera)
     
@@ -153,8 +183,8 @@ def desenhar_jogo(tela, sprites, player, farm_system, water_system, worker_syste
         ui.desenhar_cursor(tela, player, camera)
     
     # Desenhar jogador no centro da tela
-    tela_x = LARGURA // 2 - 20
-    tela_y = ALTURA // 2 - 37
+    tela_x = largura_atual // 2 - 20
+    tela_y = altura_atual // 2 - 37
     tela.blit(sprites['char'], (tela_x, tela_y))
     
     ui.desenhar_interface(tela, player, water_system, controller.get_modo_atual())
@@ -165,14 +195,14 @@ def desenhar_jogo(tela, sprites, player, farm_system, water_system, worker_syste
     pygame.display.update()
 
 def main():
-    tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera = inicializar_jogo()
+    tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera, estado_tela = inicializar_jogo()
     relogio = pygame.time.Clock()
     rodando = True
     
     while rodando:
-        rodando = processar_eventos(controller, shop, player, ui, farm_system, water_system, worker_system)
-        atualizar_jogo(controller, farm_system, water_system, worker_system, player, shop, sprites, camera)
-        desenhar_jogo(tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera)
+        rodando, tela = processar_eventos(controller, shop, player, ui, farm_system, water_system, worker_system, tela, estado_tela)
+        atualizar_jogo(controller, farm_system, water_system, worker_system, player, shop, sprites, camera, estado_tela)
+        desenhar_jogo(tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera, estado_tela)
         relogio.tick(FPS)
     
     pygame.quit()
