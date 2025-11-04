@@ -125,3 +125,29 @@ class UI:
         x_pos = grid_x * TAMANHO_CELULA
         y_pos = grid_y * TAMANHO_CELULA
         pygame.draw.rect(tela, CORES['texto'], (x_pos, y_pos, TAMANHO_CELULA, TAMANHO_CELULA), 2)
+    
+    def desenhar_trabalhadores(self, tela, worker_system, sprites):
+        cores_trabalhador = {
+            'cultivador': (100, 255, 100),
+            'coletador': (255, 215, 0),
+            'adubador': (139, 69, 19)
+        }
+        
+        for tipo, x, y in worker_system.obter_trabalhadores_ativos():
+            cor = cores_trabalhador.get(tipo, (255, 255, 255))
+            
+            corpo_rect = pygame.Rect(int(x), int(y) + 10, 25, 35)
+            pygame.draw.rect(tela, cor, corpo_rect, border_radius=5)
+            pygame.draw.rect(tela, (0, 0, 0), corpo_rect, 2, border_radius=5)
+            
+            pygame.draw.circle(tela, cor, (int(x + 12), int(y + 8)), 8)
+            pygame.draw.circle(tela, (0, 0, 0), (int(x + 12), int(y + 8)), 8, 2)
+            
+            icone_map = {
+                'cultivador': '🌱',
+                'coletador': '🧺',
+                'adubador': '🪴'
+            }
+            icone = icone_map.get(tipo, '👷')
+            texto_icone = self.fonte.render(icone, True, (0, 0, 0))
+            tela.blit(texto_icone, (int(x + 2), int(y + 18)))

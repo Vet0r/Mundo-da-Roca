@@ -7,10 +7,11 @@ class SaveSystem:
     SAVE_FILE = "fazenda_save.json"
     
     @staticmethod
-    def save_game(player, farm_system, water_system):
+    def save_game(player, farm_system, water_system, worker_system):
         try:
             dados_farm = farm_system.obter_dados_save()
             dados_water = water_system.obter_dados_save()
+            dados_workers = worker_system.obter_dados_save()
             
             dados_save = {
                 'dinheiro': player.dinheiro,
@@ -19,6 +20,7 @@ class SaveSystem:
                 'terra_adubada': dados_farm['terra_adubada'],
                 'buracos_com_agua': dados_water['buracos_com_agua'],
                 'terra_aguada': dados_water['terra_aguada'],
+                'trabalhadores': dados_workers,
                 'data_save': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
@@ -64,6 +66,7 @@ class SaveSystem:
                 'terra_adubada': dados_save.get('terra_adubada', []),
                 'buracos_com_agua': dados_save.get('buracos_com_agua', []),
                 'terra_aguada': dados_save.get('terra_aguada', []),
+                'trabalhadores': dados_save.get('trabalhadores', []),
                 'data_save': dados_save.get('data_save', 'Desconhecida')
             }
         except Exception as e:

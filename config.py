@@ -42,7 +42,8 @@ def carregar_sprites():
         'terra_aguada': pygame.transform.scale(pygame.image.load("assests/terra_aguada.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
         'poco': pygame.transform.scale(pygame.image.load("assests/poco.png"), (TAMANHO_CELULA * 2, TAMANHO_CELULA * 2)),
         'buraco': pygame.transform.scale(pygame.image.load("assests/buraco.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
-        'agua': pygame.transform.scale(pygame.image.load("assests/agua.png"), (TAMANHO_CELULA, TAMANHO_CELULA))
+        'agua': pygame.transform.scale(pygame.image.load("assests/agua.png"), (TAMANHO_CELULA, TAMANHO_CELULA)),
+        'trabalhador': pygame.transform.scale(pygame.image.load("assests/char.png"), (30, 50))
     }
     
     sprites['plantas'] = {}

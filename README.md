@@ -7,7 +7,7 @@ python3 main.py
 ```
 
 ## 📋 Requisitos
-- Python 3.x
+- Python 3.12
 - Pygame
 - Imagens: `char.png`, `grama.png`
 
