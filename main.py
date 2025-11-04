@@ -1,6 +1,7 @@
 import pygame
 import sys
 import time
+import random
 from menu import mostrar_menu
 from save_system import SaveSystem
 
@@ -32,6 +33,18 @@ TAMANHO_CELULA = 40
 terra_img = pygame.image.load("assests/terra.png")
 terra_img = pygame.transform.scale(terra_img, (TAMANHO_CELULA, TAMANHO_CELULA))
 
+terra_aguada_img = pygame.image.load("assests/terra_aguada.png")
+terra_aguada_img = pygame.transform.scale(terra_aguada_img, (TAMANHO_CELULA, TAMANHO_CELULA))
+
+poco_img = pygame.image.load("assests/poco.png")
+poco_img = pygame.transform.scale(poco_img, (TAMANHO_CELULA * 2, TAMANHO_CELULA * 2))
+
+buraco_img = pygame.image.load("assests/buraco.png")
+buraco_img = pygame.transform.scale(buraco_img, (TAMANHO_CELULA, TAMANHO_CELULA))
+
+agua_img = pygame.image.load("assests/agua.png")
+agua_img = pygame.transform.scale(agua_img, (TAMANHO_CELULA, TAMANHO_CELULA))
+
 SPRITES_PLANTAS = {
     'milho': {},
     'tomate': {},
@@ -51,6 +64,14 @@ TIPOS_SEMENTE = {
     'alface': {'cor': (0, 255, 0), 'preco': 8, 'valor_colheita': 20, 'tempo_crescimento': 3}
 }
 
+# Posição do poço (centro do mapa)
+POCO_X = LARGURA // (2 * TAMANHO_CELULA)
+POCO_Y = ALTURA // (2 * TAMANHO_CELULA)
+POCO_POS = (POCO_X, POCO_Y)
+
+# Sistema de água
+buracos_com_agua = set()  # Buracos que foram enchidos com água
+terra_aguada = set()  # Terra que está próxima à água
 terra_adubada = set()
 
 if escolha_menu == "continuar":
@@ -60,6 +81,8 @@ if escolha_menu == "continuar":
         sementes = dados_carregados['sementes']
         fazenda = dados_carregados['fazenda']
         terra_adubada = set(tuple(pos) for pos in dados_carregados.get('terra_adubada', []))
+        buracos_com_agua = set(tuple(pos) for pos in dados_carregados.get('buracos_com_agua', []))
+        terra_aguada = set(tuple(pos) for pos in dados_carregados.get('terra_aguada', []))
         print(f"Jogo carregado! Data: {dados_carregados['data_save']}")
     else:
         print("Erro ao carregar jogo, iniciando novo jogo...")
@@ -76,6 +99,9 @@ loja_aberta = False
 item_selecionado_loja = 0
 espaco_pressionado = False
 modo_adubar = False
+modo_agua = False  # Modo para cavar buraco ou pegar água
+modo_limpar = False  # Modo para remover plantas podres
+tem_balde_agua = False  # Indica se o jogador está carregando água
 
 def desenhar_planta(superficie, x, y, tipo_semente, estagio):
     """Desenha a planta usando sprite do estágio correspondente"""
@@ -89,6 +115,29 @@ def desenhar_planta(superficie, x, y, tipo_semente, estagio):
             cor = (139, 69, 19)
         pygame.draw.circle(superficie, cor, (x + TAMANHO_CELULA // 2, y + TAMANHO_CELULA // 2), tamanho // 2)
 
+def distancia_manhattan(pos1, pos2):
+    """Calcula a distância de Manhattan entre duas posições"""
+    return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+def atualizar_terra_aguada():
+    """Atualiza as terras que devem ficar aguadas (próximas a buracos com água)"""
+    global terra_aguada
+    terra_aguada.clear()
+    
+    for buraco in buracos_com_agua:
+        # Para cada buraco com água, marca terras em até 5 quadrados de distância
+        for dx in range(-5, 6):
+            for dy in range(-5, 6):
+                if distancia_manhattan((0, 0), (dx, dy)) <= 5:
+                    pos_terra = (buraco[0] + dx, buraco[1] + dy)
+                    # Não marca terra aguada onde já tem buraco, poço ou nas células do poço (2x2)
+                    if (pos_terra not in buracos_com_agua and 
+                        pos_terra != POCO_POS and
+                        pos_terra != (POCO_POS[0] + 1, POCO_POS[1]) and
+                        pos_terra != (POCO_POS[0], POCO_POS[1] + 1) and
+                        pos_terra != (POCO_POS[0] + 1, POCO_POS[1] + 1)):
+                        terra_aguada.add(pos_terra)
+
 def atualizar_plantas():
     tempo_atual = time.time()
     plantas_para_remover = []
@@ -96,22 +145,109 @@ def atualizar_plantas():
     for posicao, planta in fazenda.items():
         tempo_decorrido = tempo_atual - planta['tempo_plantio']
         tipo = planta['tipo']
-        tempo_crescimento = TIPOS_SEMENTE[tipo]['tempo_crescimento']
+        tempo_crescimento_base = TIPOS_SEMENTE[tipo]['tempo_crescimento']
         
-        novo_estagio = min(int(tempo_decorrido / tempo_crescimento) + 1, 7)
-        planta['estagio'] = novo_estagio
+        # Aplica o fator de crescimento aleatório (se não existir, usa 1.0)
+        fator_crescimento = planta.get('fator_crescimento', 1.0)
+        tempo_crescimento = tempo_crescimento_base * fator_crescimento
         
-        if novo_estagio == 7 and tempo_decorrido > tempo_crescimento * 10:
-            plantas_para_remover.append(posicao)
+        # Verifica se a planta está em terra aguada
+        if posicao not in terra_aguada and not planta.get('estragada', False):
+            # Marca planta como estragada
+            planta['estragada'] = True
+            planta['estagio'] = 7  # Estagio 7 = planta morta/estragada
+            continue
+        
+        # Se a planta não está estragada, atualiza normalmente
+        if not planta.get('estragada', False):
+            # Calcula o estágio baseado no tempo
+            estagio_calculado = int(tempo_decorrido / tempo_crescimento) + 1
+            
+            # Estágio 6 (maduro) dura 3x mais tempo que os outros estágios
+            if estagio_calculado >= 6:
+                # Tempo para chegar no estágio 6
+                tempo_ate_estagio_6 = tempo_crescimento * 5
+                tempo_extra = tempo_decorrido - tempo_ate_estagio_6
+                
+                # Estágio 6 dura 3x mais tempo
+                if tempo_extra < tempo_crescimento * 3:
+                    novo_estagio = 6
+                else:
+                    novo_estagio = 7  # Apodrece após 3x o tempo normal
+            else:
+                novo_estagio = estagio_calculado
+            
+            planta['estagio'] = novo_estagio
+            
+            # Remove plantas podres muito antigas
+            if novo_estagio == 7 and tempo_decorrido > tempo_crescimento * 15:
+                plantas_para_remover.append(posicao)
     
     for posicao in plantas_para_remover:
         del fazenda[posicao]
 
 def adubar_terra(grid_x, grid_y):
-    """Aduba uma célula de terra"""
+    """Aduba uma célula de terra (requer terra aguada)"""
     posicao = (grid_x, grid_y)
-    if posicao not in fazenda and posicao not in terra_adubada:
+    # Só pode adubar terra que esteja aguada (molhada)
+    # Não pode adubar no poço, em fazenda, em buraco com água ou onde já está adubado
+    if (posicao in terra_aguada and
+        posicao not in fazenda and 
+        posicao not in terra_adubada and
+        posicao not in buracos_com_agua and
+        posicao != POCO_POS and
+        posicao != (POCO_POS[0] + 1, POCO_POS[1]) and
+        posicao != (POCO_POS[0], POCO_POS[1] + 1) and
+        posicao != (POCO_POS[0] + 1, POCO_POS[1] + 1)):
         terra_adubada.add(posicao)
+        return True
+    return False
+
+def cavar_buraco(grid_x, grid_y):
+    """Cava um buraco para água"""
+    posicao = (grid_x, grid_y)
+    # Não pode cavar no poço ou próximo ao poço (2x2), em fazenda ou onde já tem buraco
+    if (posicao != POCO_POS and 
+        posicao != (POCO_POS[0] + 1, POCO_POS[1]) and
+        posicao != (POCO_POS[0], POCO_POS[1] + 1) and
+        posicao != (POCO_POS[0] + 1, POCO_POS[1] + 1) and
+        posicao not in fazenda and 
+        posicao not in buracos_com_agua):
+        # Remove terra adubada se existir
+        if posicao in terra_adubada:
+            terra_adubada.discard(posicao)
+        return True
+    return False
+
+def encher_buraco_com_agua(grid_x, grid_y):
+    """Enche um buraco com água (precisa estar carregando água do poço)"""
+    global tem_balde_agua
+    
+    posicao = (grid_x, grid_y)
+    # Precisa estar carregando água e o buraco não pode ter água ainda
+    # Não pode encher no poço
+    if (tem_balde_agua and 
+        posicao not in buracos_com_agua and 
+        posicao not in fazenda and
+        posicao != POCO_POS and
+        posicao != (POCO_POS[0] + 1, POCO_POS[1]) and
+        posicao != (POCO_POS[0], POCO_POS[1] + 1) and
+        posicao != (POCO_POS[0] + 1, POCO_POS[1] + 1)):
+        buracos_com_agua.add(posicao)
+        tem_balde_agua = False
+        return True
+    return False
+
+def pegar_agua_do_poco(pos_jogador_x, pos_jogador_y):
+    """Pega água do poço se estiver próximo"""
+    global tem_balde_agua
+    
+    grid_x = pos_jogador_x // TAMANHO_CELULA
+    grid_y = pos_jogador_y // TAMANHO_CELULA
+    
+    # Verifica se está próximo ao poço (adjacente ou no próprio poço)
+    if distancia_manhattan((grid_x, grid_y), POCO_POS) <= 2:
+        tem_balde_agua = True
         return True
     return False
 
@@ -120,11 +256,23 @@ def plantar_semente(grid_x, grid_y, tipo):
     global dinheiro
     
     posicao = (grid_x, grid_y)
-    if posicao not in fazenda and sementes[tipo] > 0 and posicao in terra_adubada:
+    if (posicao not in fazenda and 
+        sementes[tipo] > 0 and 
+        posicao in terra_adubada and
+        posicao not in buracos_com_agua and
+        posicao != POCO_POS and
+        posicao != (POCO_POS[0] + 1, POCO_POS[1]) and
+        posicao != (POCO_POS[0], POCO_POS[1] + 1) and
+        posicao != (POCO_POS[0] + 1, POCO_POS[1] + 1)):
+        # Fator de crescimento aleatório entre 0.7 e 1.3 (variação de ±30%)
+        fator_crescimento = random.uniform(0.7, 1.3)
+        
         fazenda[posicao] = {
             'tipo': tipo,
             'estagio': 1,
-            'tempo_plantio': time.time()
+            'tempo_plantio': time.time(),
+            'estragada': False,
+            'fator_crescimento': fator_crescimento
         }
         sementes[tipo] -= 1
         return True
@@ -146,9 +294,23 @@ def colher_planta(grid_x, grid_y):
             return True
     return False
 
+def remover_planta_podre(grid_x, grid_y):
+    """Remove uma planta podre (estágio 7) e limpa a terra"""
+    posicao = (grid_x, grid_y)
+    if posicao in fazenda:
+        planta = fazenda[posicao]
+        # Só remove plantas podres (estágio 7) ou estragadas
+        if planta['estagio'] == 7 or planta.get('estragada', False):
+            del fazenda[posicao]
+            # Remove a terra adubada também
+            if posicao in terra_adubada:
+                terra_adubada.discard(posicao)
+            return True
+    return False
+
 def desenhar_interface():
-    pygame.draw.rect(tela, (50, 50, 50), (10, 10, 300, 150))
-    pygame.draw.rect(tela, (255, 255, 255), (10, 10, 300, 150), 2)
+    pygame.draw.rect(tela, (50, 50, 50), (10, 10, 300, 180))
+    pygame.draw.rect(tela, (255, 255, 255), (10, 10, 300, 180), 2)
     
     texto_dinheiro = fonte.render(f"Dinheiro: ${dinheiro}", True, (255, 255, 255))
     tela.blit(texto_dinheiro, (20, 25))
@@ -163,21 +325,41 @@ def desenhar_interface():
         tela.blit(texto_semente, (20, y_offset))
         y_offset += 25
     
-    modo_texto = "MODO: ADUBAR" if modo_adubar else "MODO: PLANTAR"
-    cor_modo = (255, 200, 0) if modo_adubar else (0, 255, 100)
+    # Modo atual
+    if modo_limpar:
+        modo_texto = "MODO: LIMPAR"
+        cor_modo = (255, 100, 100)
+    elif modo_agua:
+        modo_texto = "MODO: ÁGUA"
+        cor_modo = (0, 150, 255)
+    elif modo_adubar:
+        modo_texto = "MODO: ADUBAR"
+        cor_modo = (255, 200, 0)
+    else:
+        modo_texto = "MODO: PLANTAR"
+        cor_modo = (0, 255, 100)
+    
     texto_modo = fonte_titulo.render(modo_texto, True, cor_modo)
     tela.blit(texto_modo, (20, 130))
     
+    # Indicador de balde com água
+    if tem_balde_agua:
+        texto_balde = fonte.render("💧 Carregando água", True, (0, 200, 255))
+        tela.blit(texto_balde, (20, 160))
+    
     instrucoes = [
-        "A: Alternar Modo Adubar/Plantar",
-        "ESPAÇO: Ação (adubar ou plantar/colher)",
-        "Segurar ESPAÇO: Ação contínua",
+        "A: Adubar | W: Água | R: Limpar",
+        "ESPAÇO: Ação nos modos",
+        "  - Limpar: Remover plantas podres",
+        "  - Adubar: Preparar terra aguada",
+        "  - Água: Cavar/Encher/Pegar água",
+        "  - Plantar: Plantar/Colher",
         "1,2,3: Selecionar semente",
         "L: Abrir/Fechar Loja",
         "S: Salvar jogo",
     ]
     
-    y_offset = 360
+    y_offset = 390
     for instrucao in instrucoes:
         texto = fonte.render(instrucao, True, (255, 255, 255))
         tela.blit(texto, (20, y_offset))
@@ -243,7 +425,20 @@ def tentar_acao_na_posicao(pos_x, pos_y):
     grid_x = pos_x // TAMANHO_CELULA
     grid_y = pos_y // TAMANHO_CELULA
     
-    if modo_adubar:
+    if modo_limpar:
+        # Modo limpar: remove plantas podres
+        remover_planta_podre(grid_x, grid_y)
+    elif modo_agua:
+        # Modo água: cavar buraco, encher com água ou pegar água do poço
+        if not tem_balde_agua:
+            # Tenta pegar água do poço
+            if not pegar_agua_do_poco(pos_x, pos_y):
+                # Se não conseguiu pegar água, cava buraco
+                cavar_buraco(grid_x, grid_y)
+        else:
+            # Se tem água, enche o buraco
+            encher_buraco_com_agua(grid_x, grid_y)
+    elif modo_adubar:
         adubar_terra(grid_x, grid_y)
     else:
         if not colher_planta(grid_x, grid_y):
@@ -268,7 +463,7 @@ tempo_mensagem = 0
 while rodando:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
-            if SaveSystem.save_game(dinheiro, sementes, fazenda, terra_adubada):
+            if SaveSystem.save_game(dinheiro, sementes, fazenda, terra_adubada, buracos_com_agua, terra_aguada):
                 print("Jogo salvo automaticamente!")
             rodando = False
         
@@ -295,8 +490,22 @@ while rodando:
             
             elif not loja_aberta:
                 if evento.key == pygame.K_a:
+                    modo_agua = False
+                    modo_limpar = False
                     modo_adubar = not modo_adubar
                     print(f"Modo: {'ADUBAR' if modo_adubar else 'PLANTAR'}")
+                
+                elif evento.key == pygame.K_w:
+                    modo_adubar = False
+                    modo_limpar = False
+                    modo_agua = not modo_agua
+                    print(f"Modo: {'ÁGUA' if modo_agua else 'PLANTAR'}")
+                
+                elif evento.key == pygame.K_r:
+                    modo_adubar = False
+                    modo_agua = False
+                    modo_limpar = not modo_limpar
+                    print(f"Modo: {'LIMPAR' if modo_limpar else 'PLANTAR'}")
                 
                 elif evento.key == pygame.K_1:
                     semente_selecionada = 'milho'
@@ -309,7 +518,7 @@ while rodando:
                     tentar_acao_na_posicao(x + 20, y + 37)
                 
                 elif evento.key == pygame.K_s:
-                    if SaveSystem.save_game(dinheiro, sementes, fazenda, terra_adubada):
+                    if SaveSystem.save_game(dinheiro, sementes, fazenda, terra_adubada, buracos_com_agua, terra_aguada):
                         mensagem_save = "Jogo salvo com sucesso!"
                         tempo_mensagem = time.time()
                         print("Jogo salvo!")
@@ -335,6 +544,7 @@ while rodando:
         if espaco_pressionado:
             tentar_acao_na_posicao(x + 20, y + 37)
 
+    atualizar_terra_aguada()
     atualizar_plantas()
 
     for i in range(0, LARGURA, grama_img.get_width()):
@@ -346,10 +556,28 @@ while rodando:
     for j in range(0, ALTURA, TAMANHO_CELULA):
         pygame.draw.line(tela, (100, 100, 100), (0, j), (LARGURA, j), 1)
     
+    # Desenhar terra aguada
+    for (grid_x, grid_y) in terra_aguada:
+        x_pos = grid_x * TAMANHO_CELULA
+        y_pos = grid_y * TAMANHO_CELULA
+        tela.blit(terra_aguada_img, (x_pos, y_pos))
+    
+    # Desenhar terra adubada
     for (grid_x, grid_y) in terra_adubada:
         x_pos = grid_x * TAMANHO_CELULA
         y_pos = grid_y * TAMANHO_CELULA
         tela.blit(terra_img, (x_pos, y_pos))
+    
+    # Desenhar poço
+    poco_x = POCO_X * TAMANHO_CELULA
+    poco_y = POCO_Y * TAMANHO_CELULA
+    tela.blit(poco_img, (poco_x, poco_y))
+    
+    # Desenhar buracos com água
+    for (grid_x, grid_y) in buracos_com_agua:
+        x_pos = grid_x * TAMANHO_CELULA
+        y_pos = grid_y * TAMANHO_CELULA
+        tela.blit(agua_img, (x_pos, y_pos))
     
     for (grid_x, grid_y), planta in fazenda.items():
         x_pos = grid_x * TAMANHO_CELULA

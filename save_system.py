@@ -8,7 +8,7 @@ class SaveSystem:
     SAVE_FILE = "fazenda_save.json"
     
     @staticmethod
-    def save_game(dinheiro, sementes, fazenda, terra_adubada=None):
+    def save_game(dinheiro, sementes, fazenda, terra_adubada=None, buracos_com_agua=None, terra_aguada=None):
         try:
             tempo_atual = time.time()
             fazenda_serializada = {}
@@ -18,7 +18,9 @@ class SaveSystem:
                 fazenda_serializada[key] = {
                     'tipo': planta['tipo'],
                     'estagio': planta['estagio'],
-                    'tempo_decorrido': tempo_decorrido
+                    'tempo_decorrido': tempo_decorrido,
+                    'estragada': planta.get('estragada', False),
+                    'fator_crescimento': planta.get('fator_crescimento', 1.0)
                 }
             
             # Serializar terra adubada
@@ -26,11 +28,23 @@ class SaveSystem:
             if terra_adubada:
                 terra_adubada_lista = [list(pos) for pos in terra_adubada]
             
+            # Serializar buracos com água
+            buracos_com_agua_lista = []
+            if buracos_com_agua:
+                buracos_com_agua_lista = [list(pos) for pos in buracos_com_agua]
+            
+            # Serializar terra aguada
+            terra_aguada_lista = []
+            if terra_aguada:
+                terra_aguada_lista = [list(pos) for pos in terra_aguada]
+            
             dados_save = {
                 'dinheiro': dinheiro,
                 'sementes': sementes,
                 'fazenda': fazenda_serializada,
                 'terra_adubada': terra_adubada_lista,
+                'buracos_com_agua': buracos_com_agua_lista,
+                'terra_aguada': terra_aguada_lista,
                 'data_save': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
@@ -64,13 +78,18 @@ class SaveSystem:
                 fazenda[(pos_x, pos_y)] = {
                     'tipo': planta['tipo'],
                     'estagio': planta['estagio'],
-                    'tempo_plantio': tempo_plantio
+                    'tempo_plantio': tempo_plantio,
+                    'estragada': planta.get('estragada', False),
+                    'fator_crescimento': planta.get('fator_crescimento', 1.0)
                 }
             
             return {
                 'dinheiro': dados_save['dinheiro'],
                 'sementes': dados_save['sementes'],
                 'fazenda': fazenda,
+                'terra_adubada': dados_save.get('terra_adubada', []),
+                'buracos_com_agua': dados_save.get('buracos_com_agua', []),
+                'terra_aguada': dados_save.get('terra_aguada', []),
                 'data_save': dados_save.get('data_save', 'Desconhecida')
             }
         except Exception as e:
