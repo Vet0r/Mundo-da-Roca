@@ -1,15 +1,50 @@
 # Fazenda Virtual
 
-Um jogo de simulação de fazenda educacional feito em ## 🚀 Como Executar
+Um jogo de simulação de fazenda educacional feito em Pygame com suporte a renderização por GPU (OpenGL).
+
+## 🚀 Como Executar
+
+### Opção 1: Com GPU (Recomendado)
 ```bash
-cd /Users/vitortargino/apps/pygame
+# Primeira vez - instalar dependências OpenGL
+python3 install_opengl.py
+
+# Executar o jogo
+python3 main.py
+```
+
+### Opção 2: Apenas com Pygame (CPU)
+```bash
 python3 main.py
 ```
 
 ## 📋 Requisitos
 - Python 3.12
 - Pygame
+- **GPU (Opcional)**: PyOpenGL, NumPy, PyGLM para renderização com GPU
 - Imagens: `char.png`, `grama.png`
+
+## 🎮 Suporte a GPU
+
+O jogo detecta automaticamente se sua GPU está disponível:
+
+- **✓ GPU Disponível**: Usa OpenGL 3.3+ para renderização paralela
+- **✗ GPU Indisponível**: Fallback automático para Pygame (CPU)
+
+### Verificar Compatibilidade
+
+```bash
+python3 test_gpu.py
+```
+
+### Durante o Jogo
+
+Pressione **G** para ver qual renderizador está sendo usado:
+```
+Renderizador: OpenGL (GPU)  ← Usando aceleração de GPU
+ou
+Renderizador: Pygame (CPU)  ← Renderização por CPU
+```
 
 ## 💾 Sistema de Save
 

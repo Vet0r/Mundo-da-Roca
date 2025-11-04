@@ -1,0 +1,33 @@
+"""
+requirements.txt - Dependências do Projeto Mundo-da-Roca com GPU
+
+Use:
+    pip install -r requirements.txt
+
+Ou para instalar apenas dependências GPU (opcional):
+    pip install -r requirements-gpu.txt
+"""
+
+# ============================================================
+# DEPENDÊNCIAS PRINCIPAIS (Obrigatórias)
+# ============================================================
+
+pygame>=2.5.0           # Engine do jogo
+Pillow>=10.0.0         # Processamento de imagens (usado por pygame)
+
+# ============================================================
+# DEPENDÊNCIAS GPU (Opcionais - para aceleração)
+# ============================================================
+
+PyOpenGL>=3.1.5        # Renderização OpenGL
+PyOpenGL-accelerate>=3.1.5   # Aceleração (opcional)
+numpy>=1.24.0          # Computação numérica (necessário para OpenGL)
+PyGLM>=2.7.0           # Matemática 3D / Álgebra linear
+
+# ============================================================
+# DEPENDÊNCIAS DE DESENVOLVIMENTO (Opcionais)
+# ============================================================
+
+# pylint>=3.0.0         # Linter para verificação de código
+# pytest>=7.0.0         # Framework de testes
+# black>=23.0.0         # Formatação de código
