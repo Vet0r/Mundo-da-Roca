@@ -59,6 +59,14 @@ class WaterSystem:
             return True
         return False
     
+    def remover_agua(self, grid_x, grid_y):
+        posicao = (grid_x, grid_y)
+        if posicao in self.buracos_com_agua:
+            self.buracos_com_agua.discard(posicao)
+            self.atualizar_terra_aguada()
+            return True
+        return False
+    
     def carregar_dados(self, buracos, terra_aguada):
         self.buracos_com_agua = set(tuple(pos) for pos in buracos)
         self.terra_aguada = set(tuple(pos) for pos in terra_aguada)
