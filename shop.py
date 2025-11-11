@@ -1,5 +1,6 @@
 import pygame
 from config import TIPOS_SEMENTE, CORES
+from sound_system import SoundSystem
 
 class Shop:
     def __init__(self, largura, altura):
@@ -10,6 +11,7 @@ class Shop:
         self.aba_atual = 'sementes'
         self.fonte_titulo = pygame.font.Font(None, 32)
         self.fonte = pygame.font.Font(None, 24)
+        self.sound_system = SoundSystem()
     
     def toggle(self):
         self.aberta = not self.aberta
@@ -20,6 +22,7 @@ class Shop:
     def trocar_aba(self):
         self.aba_atual = 'trabalhadores' if self.aba_atual == 'sementes' else 'sementes'
         self.item_selecionado = 0
+        self.sound_system.tocar_sfx('arrow')
     
     def atualizar_dimensoes(self, largura, altura):
         self.largura = largura
@@ -31,6 +34,7 @@ class Shop:
             self.item_selecionado = (self.item_selecionado - 1) % max_itens
         elif direcao == 'baixo':
             self.item_selecionado = (self.item_selecionado + 1) % max_itens
+        self.sound_system.tocar_sfx('arrow')
     
     def comprar_semente(self, player, quantidade=1):
         tipos_ordenados = list(TIPOS_SEMENTE.keys())
@@ -39,14 +43,22 @@ class Shop:
         
         if player.gastar_dinheiro(preco_total):
             player.adicionar_sementes(tipo_selecionado, quantidade)
+            self.sound_system.tocar_sfx('select')
             return True
-        return False
+        else:
+            self.sound_system.tocar_sfx('select_erro')
+            return False
     
     def contratar_trabalhador(self, player, worker_system, posicao_spawn):
         tipos_trabalhador = ['cultivador', 'coletador', 'adubador']
         tipo_selecionado = tipos_trabalhador[self.item_selecionado]
         
-        return worker_system.contratar_trabalhador(tipo_selecionado, player, posicao_spawn)
+        sucesso = worker_system.contratar_trabalhador(tipo_selecionado, player, posicao_spawn)
+        if sucesso:
+            self.sound_system.tocar_sfx('select')
+        else:
+            self.sound_system.tocar_sfx('select_erro')
+        return sucesso
     
     def desenhar(self, tela, worker_system=None):
         largura_loja = 450

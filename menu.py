@@ -1,6 +1,7 @@
 import pygame
 import sys
 from save_system import SaveSystem
+from sound_system import SoundSystem
 
 class Menu:
     
@@ -9,6 +10,8 @@ class Menu:
         self.altura = altura
         self.tela = pygame.display.set_mode((largura, altura))
         pygame.display.set_caption("Mundo da Roça - Menu")
+        
+        self.sound_system = SoundSystem()
         
         self.fonte_titulo = pygame.font.Font(None, 72)
         self.fonte_opcao = pygame.font.Font(None, 40)
@@ -21,7 +24,6 @@ class Menu:
         self.cor_info = (200, 200, 200)
         self.cor_destaque = (255, 215, 0)
         
-        # Carrega a textura de grama para o background
         self.grama = pygame.image.load("assets/grama.png")
         self.grama_rect = self.grama.get_rect()
         
@@ -116,11 +118,14 @@ class Menu:
     
     def navegar_cima(self):
         self.opcao_selecionada = (self.opcao_selecionada - 1) % len(self.opcoes)
+        self.sound_system.tocar_sfx('arrow')
     
     def navegar_baixo(self):
         self.opcao_selecionada = (self.opcao_selecionada + 1) % len(self.opcoes)
+        self.sound_system.tocar_sfx('arrow')
     
     def selecionar_opcao(self):
+        self.sound_system.tocar_sfx('select')
         return self.opcoes[self.opcao_selecionada]["acao"]
     
     def confirmar_delecao(self):
@@ -135,7 +140,9 @@ class Menu:
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_LEFT or evento.key == pygame.K_RIGHT:
                         opcao_confirmacao = 1 - opcao_confirmacao
+                        self.sound_system.tocar_sfx('arrow')
                     elif evento.key == pygame.K_RETURN:
+                        self.sound_system.tocar_sfx('select')
                         return opcao_confirmacao == 1
                     elif evento.key == pygame.K_ESCAPE:
                         return False
@@ -175,6 +182,8 @@ class Menu:
     
     def executar(self):
         relogio = pygame.time.Clock()
+        
+        self.sound_system.tocar_musica('menu')
         
         while True:
             for evento in pygame.event.get():
