@@ -61,7 +61,7 @@ class Worker:
         self.direcao_patrulha = [random.choice([-1, 1]), random.choice([-1, 1])]
         self.ultimo_pagamento = time.time()
         self.intervalo_pagamento = 20  # 20 segundos
-        self.custo_manutencao = 1  # $1 por pagamento
+        self.custo_manutencao = 5  # $5 por pagamento
         self.worker_id = None  # Será definido quando criado no WorkerSystem
     
     def encontrar_proximo_alvo(self, farm_system, water_system, player):

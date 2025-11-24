@@ -247,7 +247,11 @@ def main():
         rodando, tela, resultado = processar_eventos(controller, shop, player, ui, farm_system, water_system, worker_system, tela, estado_tela, pause_menu, sound_system)
         
         if resultado == "menu":
-            break
+            sound_system.parar_musica()
+            pygame.quit()
+            # Reiniciar o menu
+            main()
+            return
         
         atualizar_jogo(controller, farm_system, water_system, worker_system, player, shop, sprites, camera, estado_tela, pause_menu)
         desenhar_jogo(tela, sprites, player, farm_system, water_system, worker_system, shop, ui, controller, camera, estado_tela, pause_menu)
