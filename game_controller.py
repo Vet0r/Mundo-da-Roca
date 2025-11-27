@@ -37,7 +37,7 @@ class GameController:
             self.modo_limpar = not self.modo_limpar
             return 'LIMPAR' if self.modo_limpar else 'PLANTAR'
     
-    def executar_acao(self):
+    def executar_acao(self, ui=None):
         pos_x, pos_y = self.player.get_pixel_position_center()
         grid_x = pos_x // TAMANHO_CELULA
         grid_y = pos_y // TAMANHO_CELULA
@@ -52,9 +52,13 @@ class GameController:
                         if (grid_x, grid_y) in self.farm_system.terra_adubada:
                             self.farm_system.terra_adubada.discard((grid_x, grid_y))
             else:
-                self.water_system.encher_buraco_com_agua(grid_x, grid_y, self.farm_system.fazenda)
+                sucesso, status = self.water_system.encher_buraco_com_agua(grid_x, grid_y, self.farm_system.fazenda, self.player)
+                if not sucesso and status == "sem_dinheiro" and ui:
+                    ui.mostrar_mensagem_save("Dinheiro insuficiente! (5 moedas)")
         elif self.modo_adubar:
-            self.farm_system.adubar_terra(grid_x, grid_y, self.water_system)
+            sucesso, status = self.farm_system.adubar_terra(grid_x, grid_y, self.water_system, self.player)
+            if not sucesso and status == "sem_dinheiro" and ui:
+                ui.mostrar_mensagem_save("Dinheiro insuficiente! (3 moedas)")
         else:
             colheu, valor = self.farm_system.colher_planta(grid_x, grid_y)
             if colheu:

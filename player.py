@@ -8,6 +8,7 @@ class Player:
         self.dinheiro = 100
         self.sementes = {'milho': 20, 'tomate': 10, 'alface': 30}
         self.semente_selecionada = 'milho'
+        self.tem_poco = False  # Indica se o jogador comprou um poço para posicionar
     
     def mover(self, teclas, largura=None, altura=None):
         # Mapa infinito - sem restrições de borda

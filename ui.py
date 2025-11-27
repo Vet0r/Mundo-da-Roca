@@ -10,8 +10,8 @@ class UI:
         self.tempo_mensagem = 0
     
     def desenhar_interface(self, tela, player, water_system, modo_atual):
-        pygame.draw.rect(tela, CORES['fundo_interface'], (10, 10, 300, 180))
-        pygame.draw.rect(tela, CORES['borda_interface'], (10, 10, 300, 180), 2)
+        pygame.draw.rect(tela, CORES['fundo_interface'], (10, 10, 300, 200))
+        pygame.draw.rect(tela, CORES['borda_interface'], (10, 10, 300, 200), 2)
         
         texto_dinheiro = self.fonte.render(f"Dinheiro: ${player.dinheiro}", True, CORES['texto'])
         tela.blit(texto_dinheiro, (20, 25))
@@ -33,6 +33,10 @@ class UI:
         if water_system.tem_balde_agua:
             texto_balde = self.fonte.render("💧 Carregando água", True, CORES['agua_indicador'])
             tela.blit(texto_balde, (20, 160))
+        
+        if player.tem_poco:
+            texto_poco = self.fonte.render("🔧 Pressione P para posicionar poço", True, (255, 215, 0))
+            tela.blit(texto_poco, (20, 180))
         
         self._desenhar_instrucoes(tela)
         self._desenhar_mensagem_save(tela, tela.get_width())
@@ -129,11 +133,12 @@ class UI:
                 tela_x, tela_y = camera.aplicar_grid(grid_x, grid_y, TAMANHO_CELULA)
                 tela.blit(sprites['terra'], (tela_x, tela_y))
         
-        # Desenhar poço
-        poco_x = POCO_POS[0] * TAMANHO_CELULA
-        poco_y = POCO_POS[1] * TAMANHO_CELULA
-        tela_x, tela_y = camera.aplicar(poco_x, poco_y)
-        tela.blit(sprites['poco'], (tela_x, tela_y))
+        # Desenhar todos os poços
+        for poco_pos in water_system.pocos:
+            poco_x = poco_pos[0] * TAMANHO_CELULA
+            poco_y = poco_pos[1] * TAMANHO_CELULA
+            tela_x, tela_y = camera.aplicar(poco_x, poco_y)
+            tela.blit(sprites['poco'], (tela_x, tela_y))
         
         # Desenhar buracos com água (apenas células visíveis)
         for (grid_x, grid_y) in water_system.buracos_com_agua:

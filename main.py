@@ -53,7 +53,8 @@ def carregar_jogo(player, farm_system, water_system, worker_system):
         player.carregar_dados(dados_carregados['dinheiro'], dados_carregados['sementes'])
         farm_system.carregar_dados(dados_carregados['fazenda'], dados_carregados.get('terra_adubada', []))
         water_system.carregar_dados(dados_carregados.get('buracos_com_agua', []), 
-                                    dados_carregados.get('terra_aguada', []))
+                                    dados_carregados.get('terra_aguada', []),
+                                    dados_carregados.get('pocos', None))
         worker_system.carregar_dados(dados_carregados.get('trabalhadores', []))
         print(f"Jogo carregado! Data: {dados_carregados['data_save']}")
     else:
@@ -167,10 +168,17 @@ def processar_eventos_loja(evento, shop, player, ui, worker_system):
             else:
                 print("Dinheiro insuficiente!")
                 ui.mostrar_mensagem_save("Dinheiro insuficiente!")
-        else:
+        elif shop.aba_atual == 'trabalhadores':
             posicao_spawn = (player.x, player.y)
             if shop.contratar_trabalhador(player, worker_system, posicao_spawn):
                 print("Trabalhador contratado!")
+            else:
+                print("Dinheiro insuficiente!")
+                ui.mostrar_mensagem_save("Dinheiro insuficiente!")
+        elif shop.aba_atual == 'utilidades':
+            if shop.comprar_poco(player):
+                print("Poço comprado! Pressione P para posicionar")
+                ui.mostrar_mensagem_save("Poço comprado! Pressione P para posicionar")
             else:
                 print("Dinheiro insuficiente!")
                 ui.mostrar_mensagem_save("Dinheiro insuficiente!")
@@ -192,7 +200,24 @@ def processar_eventos_jogo(evento, controller, player, ui, farm_system, water_sy
     elif evento.key == pygame.K_3:
         player.selecionar_semente(2)
     elif evento.key == pygame.K_SPACE:
-        controller.executar_acao()
+        controller.executar_acao(ui)
+    elif evento.key == pygame.K_p:
+        # Posicionar poço
+        if player.tem_poco:
+            pos_x, pos_y = player.get_pixel_position_center()
+            grid_x = pos_x // 50  # TAMANHO_CELULA
+            grid_y = pos_y // 50
+            sucesso, status = water_system.adicionar_poco(grid_x, grid_y)
+            if sucesso:
+                player.tem_poco = False
+                ui.mostrar_mensagem_save("Poço posicionado com sucesso!")
+                print("Poço posicionado!")
+            elif status == "muito_proximo":
+                ui.mostrar_mensagem_save("Muito próximo de outro poço!")
+            elif status == "tem_agua":
+                ui.mostrar_mensagem_save("Não pode colocar poço na água!")
+        else:
+            ui.mostrar_mensagem_save("Você não tem poço para posicionar!")
     elif evento.key == pygame.K_s:
         if SaveSystem.save_game(player, farm_system, water_system, worker_system):
             ui.mostrar_mensagem_save("Jogo salvo com sucesso!")

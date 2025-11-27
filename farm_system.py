@@ -7,7 +7,7 @@ class FarmSystem:
         self.fazenda = {}
         self.terra_adubada = set()
     
-    def adubar_terra(self, grid_x, grid_y, water_system):
+    def adubar_terra(self, grid_x, grid_y, water_system, player):
         posicao = (grid_x, grid_y)
         if (posicao in water_system.terra_aguada and
             posicao not in self.fazenda and 
@@ -17,9 +17,12 @@ class FarmSystem:
             posicao != (POCO_POS[0] + 1, POCO_POS[1]) and
             posicao != (POCO_POS[0], POCO_POS[1] + 1) and
             posicao != (POCO_POS[0] + 1, POCO_POS[1] + 1)):
-            self.terra_adubada.add(posicao)
-            return True
-        return False
+            if player.gastar_dinheiro(3):
+                self.terra_adubada.add(posicao)
+                return True, "cultivado"
+            else:
+                return False, "sem_dinheiro"
+        return False, "invalido"
     
     def plantar_semente(self, grid_x, grid_y, tipo, sementes, water_system):
         posicao = (grid_x, grid_y)

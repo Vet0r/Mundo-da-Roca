@@ -20,7 +20,10 @@ class Shop:
             self.aba_atual = 'sementes'
     
     def trocar_aba(self):
-        self.aba_atual = 'trabalhadores' if self.aba_atual == 'sementes' else 'sementes'
+        abas = ['sementes', 'trabalhadores', 'utilidades']
+        idx_atual = abas.index(self.aba_atual)
+        idx_novo = (idx_atual + 1) % len(abas)
+        self.aba_atual = abas[idx_novo]
         self.item_selecionado = 0
         self.sound_system.tocar_sfx('arrow')
     
@@ -29,7 +32,13 @@ class Shop:
         self.altura = altura
     
     def navegar(self, direcao):
-        max_itens = 3 if self.aba_atual == 'sementes' else 3
+        if self.aba_atual == 'sementes':
+            max_itens = 3
+        elif self.aba_atual == 'trabalhadores':
+            max_itens = 3
+        else:  # utilidades
+            max_itens = 1
+        
         if direcao == 'cima':
             self.item_selecionado = (self.item_selecionado - 1) % max_itens
         elif direcao == 'baixo':
@@ -60,6 +69,15 @@ class Shop:
             self.sound_system.tocar_sfx('select_erro')
         return sucesso
     
+    def comprar_poco(self, player):
+        if player.gastar_dinheiro(1000):
+            player.tem_poco = True
+            self.sound_system.tocar_sfx('select')
+            return True
+        else:
+            self.sound_system.tocar_sfx('select_erro')
+            return False
+    
     def desenhar(self, tela, worker_system=None):
         largura_loja = 450
         altura_loja = 500
@@ -69,7 +87,12 @@ class Shop:
         pygame.draw.rect(tela, CORES['loja_fundo'], (x_loja, y_loja, largura_loja, altura_loja))
         pygame.draw.rect(tela, CORES['borda_interface'], (x_loja, y_loja, largura_loja, altura_loja), 3)
         
-        titulo_texto = "LOJA - " + ("SEMENTES" if self.aba_atual == 'sementes' else "TRABALHADORES")
+        titulo_map = {
+            'sementes': 'SEMENTES',
+            'trabalhadores': 'TRABALHADORES',
+            'utilidades': 'UTILIDADES'
+        }
+        titulo_texto = "LOJA - " + titulo_map.get(self.aba_atual, 'SEMENTES')
         titulo = self.fonte_titulo.render(titulo_texto, True, CORES['texto'])
         titulo_rect = titulo.get_rect(center=(self.largura // 2, y_loja + 30))
         tela.blit(titulo, titulo_rect)
@@ -80,26 +103,34 @@ class Shop:
         
         if self.aba_atual == 'sementes':
             self._desenhar_sementes(tela, x_loja, y_loja, y_offset, largura_loja)
-        else:
+        elif self.aba_atual == 'trabalhadores':
             self._desenhar_trabalhadores(tela, x_loja, y_loja, y_offset, largura_loja, worker_system)
+        else:  # utilidades
+            self._desenhar_utilidades(tela, x_loja, y_loja, y_offset, largura_loja)
         
     def _desenhar_abas(self, tela, x_loja, y_loja, largura_loja):
-        aba_largura = largura_loja // 2
+        aba_largura = largura_loja // 3
         
         cor_aba_sementes = CORES['loja_destaque'] if self.aba_atual == 'sementes' else CORES['loja_fundo']
         cor_aba_trabalhadores = CORES['loja_destaque'] if self.aba_atual == 'trabalhadores' else CORES['loja_fundo']
+        cor_aba_utilidades = CORES['loja_destaque'] if self.aba_atual == 'utilidades' else CORES['loja_fundo']
         
         pygame.draw.rect(tela, cor_aba_sementes, (x_loja, y_loja + 60, aba_largura, 35))
         pygame.draw.rect(tela, cor_aba_trabalhadores, (x_loja + aba_largura, y_loja + 60, aba_largura, 35))
+        pygame.draw.rect(tela, cor_aba_utilidades, (x_loja + aba_largura * 2, y_loja + 60, aba_largura, 35))
         
         pygame.draw.rect(tela, CORES['borda_interface'], (x_loja, y_loja + 60, aba_largura, 35), 2)
         pygame.draw.rect(tela, CORES['borda_interface'], (x_loja + aba_largura, y_loja + 60, aba_largura, 35), 2)
+        pygame.draw.rect(tela, CORES['borda_interface'], (x_loja + aba_largura * 2, y_loja + 60, aba_largura, 35), 2)
         
-        texto_sementes = self.fonte.render("Sementes (TAB)", True, CORES['texto'])
-        texto_trabalhadores = self.fonte.render("Trabalhadores (TAB)", True, CORES['texto'])
+        fonte_pequena = pygame.font.Font(None, 20)
+        texto_sementes = fonte_pequena.render("Sementes", True, CORES['texto'])
+        texto_trabalhadores = fonte_pequena.render("Trabalhadores", True, CORES['texto'])
+        texto_utilidades = fonte_pequena.render("Utilidades", True, CORES['texto'])
         
-        tela.blit(texto_sementes, (x_loja + 10, y_loja + 70))
-        tela.blit(texto_trabalhadores, (x_loja + aba_largura + 10, y_loja + 70))
+        tela.blit(texto_sementes, (x_loja + aba_largura//2 - texto_sementes.get_width()//2, y_loja + 72))
+        tela.blit(texto_trabalhadores, (x_loja + aba_largura + aba_largura//2 - texto_trabalhadores.get_width()//2, y_loja + 72))
+        tela.blit(texto_utilidades, (x_loja + aba_largura*2 + aba_largura//2 - texto_utilidades.get_width()//2, y_loja + 72))
     
     def _desenhar_sementes(self, tela, x_loja, y_loja, y_offset, largura_loja):
         tipos_ordenados = list(TIPOS_SEMENTE.keys())
@@ -176,6 +207,42 @@ class Shop:
             "[!] Cada trabalhador custa $1 a cada 20s",
             "Trabalhadores param se você ficar sem $",
             "Voltam a trabalhar quando houver dinheiro",
+            "",
+            "L ou ESC: Fechar loja"
+        ]
+        
+        y_offset += 10
+        for instrucao in instrucoes:
+            if instrucao == "":
+                y_offset += 8
+            else:
+                texto = self.fonte.render(instrucao, True, CORES['cinza_info'])
+                tela.blit(texto, (x_loja + 20, y_offset))
+                y_offset += 18
+    
+    def _desenhar_utilidades(self, tela, x_loja, y_loja, y_offset, largura_loja):
+        # Apenas o poço por enquanto
+        if self.item_selecionado == 0:
+            pygame.draw.rect(tela, CORES['loja_destaque'], (x_loja + 10, y_offset - 5, largura_loja - 20, 55))
+        
+        texto_item = self.fonte.render("Poço - $1000", True, (50, 150, 255))
+        tela.blit(texto_item, (x_loja + 20, y_offset))
+        
+        texto_descricao = self.fonte.render("Permite pegar água em qualquer lugar", True, CORES['cinza_info'])
+        tela.blit(texto_descricao, (x_loja + 20, y_offset + 25))
+        
+        if self.item_selecionado == 0:
+            seta = self.fonte.render("[<<]", True, CORES['texto'])
+            tela.blit(seta, (x_loja + largura_loja - 50, y_offset))
+        
+        y_offset += 80
+        
+        instrucoes = [
+            "UP/DOWN: Navegar | TAB: Trocar aba",
+            "ENTER: Comprar poço",
+            "",
+            "Após comprar, pressione P para posicionar",
+            "o poço no local desejado",
             "",
             "L ou ESC: Fechar loja"
         ]

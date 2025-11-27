@@ -289,7 +289,7 @@ class Worker:
                     player.adicionar_dinheiro(valor)
                     resultado = True
             elif self.tipo == 'adubador':
-                resultado = farm_system.adubar_terra(grid_x, grid_y, water_system)
+                resultado, _ = farm_system.adubar_terra(grid_x, grid_y, water_system, player)
             
             # Desalocar a tarefa após tentativa de execução
             worker_consciousness.desalocar_tarefa(self.alvo_atual, self.worker_id)
