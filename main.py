@@ -204,9 +204,7 @@ def processar_eventos_jogo(evento, controller, player, ui, farm_system, water_sy
     elif evento.key == pygame.K_p:
         # Posicionar poço
         if player.tem_poco:
-            pos_x, pos_y = player.get_pixel_position_center()
-            grid_x = pos_x // 50  # TAMANHO_CELULA
-            grid_y = pos_y // 50
+            grid_x, grid_y = player.get_grid_position()
             sucesso, status = water_system.adicionar_poco(grid_x, grid_y)
             if sucesso:
                 player.tem_poco = False
